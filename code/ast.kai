@@ -65,7 +65,65 @@ AstKind :: enum {
 }
 
 Ast :: union {
-
+    badExpr : struct {}
+    comment : struct {}
+    structField : struct {}
+    enumCase : struct {}
+    locationDirective : struct {}
+    nilLiteral : struct {}
+    ident : struct {}
+    ellipsis : struct {}
+    basicLit : struct {}
+    polyParameterList : struct {}
+    resultList : struct {}
+    identList : struct {}
+    funcLit : struct {}
+    compositeLit : struct {}
+    paren : struct {}
+    selector : struct {}
+    subscript : struct {}
+    slice : struct {}
+    _autocast : struct {}
+    _cast : struct {}
+    call : struct {}
+    unary : struct {}
+    binary : struct {}
+    ternary : struct {}
+    keyValue : struct {}
+    pointerType : struct {}
+    arrayType : struct {}
+    sliceType : struct {}
+    vectorType : struct {}
+    structType : struct {}
+    polyStructType : struct {}
+    enumType : struct {}
+    unionType : struct {}
+    variantType : struct {}
+    polyType : struct {}
+    variadicType : struct {}
+    funcType : struct {}
+    badStmt : struct {}
+    empty : struct {}
+    label : struct {}
+    assign : struct {}
+    returnStmt : struct {}
+    deferStmt : struct {}
+    usingStmt : struct {}
+    branchStmt : struct {}
+    block : struct {}
+    ifStmt : struct {}
+    caseClause : struct {}
+    switchStmt : struct {}
+    forStmt : struct {}
+    forIn : struct {}
+    importStmt : struct {}
+    library : struct {}
+    foreign : struct {}
+    declBlock : struct {}
+    declaration : struct {}
+    badDecl : struct {}
+    functionSpecialization : struct {}
+    structSpecialization : struct {}
 }
 
 AstNode :: struct {
