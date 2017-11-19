@@ -1,0 +1,76 @@
+#import "tokens.kai"
+
+Pos :: tokens.Pos
+
+AstKind :: enum {
+    badExpr,
+    comment,
+    structField,
+    enumCase,
+    locationDirective,
+    nilLiteral,
+    ident,
+    ellipsis,
+    basicLit,
+    polyParameterList,
+    resultList,
+    identList,
+    funcLit,
+    compositeLit,
+    paren,
+    selector,
+    subscript,
+    slice,
+    _autocast,
+    _cast,
+    call,
+    unary,
+    binary,
+    ternary,
+    keyValue,
+    pointerType,
+    arrayType,
+    sliceType,
+    vectorType,
+    structType,
+    polyStructType,
+    enumType,
+    unionType,
+    variantType,
+    polyType,
+    variadicType,
+    funcType,
+    badStmt,
+    empty,
+    label,
+    assign,
+    returnStmt,
+    deferStmt,
+    usingStmt,
+    branchStmt,
+    block,
+    ifStmt,
+    caseClause,
+    switchStmt,
+    forStmt,
+    forIn,
+    importStmt,
+    library,
+    foreign,
+    declBlock,
+    declaration,
+    badDecl,
+    functionSpecialization,
+    structSpecialization
+}
+
+Ast :: union {
+
+}
+
+AstNode :: struct {
+    kind: AstKind
+    start,
+    end: Pos
+    ast: Ast
+}
