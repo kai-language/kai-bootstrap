@@ -3,11 +3,10 @@
 AllocType :: enum {
     Alloc,
     Free,
-    FreeAll,
-    Realloc
+    FreeAll
 }
 
-AllocFunc :: *(data: rawptr, type: AllocType, size: u64) -> rawptr
+AllocFunc :: *(payload: rawptr, type: AllocType, size: u64, old: rawptr) -> rawptr
 
 Allocator :: struct {
     func: AllocFunc
@@ -16,35 +15,67 @@ Allocator :: struct {
 
 Arena :: struct {
     allocator: Allocator
-    offset: u64
     raw: []u8
 }
 
-arenaAllocFunc :: fn() -> void {
-
+InitArena :: fn(size: u64) -> Arena {
+    raw : []u8
+    raw.raw = libc.malloc(size)
+    raw.cap = size 
+    raw.len = 0
+    return Arena {
+        raw: raw
+    }
 }
 
+InitArenaAllocator :: fn(arena: *Arena) -> Allocator {
+    return Allocator {
+        &arenaAllocFunc,
+        arena
+    }
+}
 
-test :: fn(data: rawptr, type: AllocType, size: u64) -> rawptr {
-    message: *u8
+arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size: u64, old: rawptr) -> rawptr {
+    arena: *Arena = autocast payload
 
     using AllocType
     switch type {
-    case AllocType.Alloc: message = "Called 'Alloc'\n".raw
-    case Free: message = "Called 'Free'\n".raw
-    case FreeAll: message = "Called 'FreeAll'\n".raw
-    case Realloc: message = "Called 'Realloc'\n".raw
+    case Alloc: 
+        if arena.raw.len + size > arena.raw.cap {
+            return nil
+        }
+        ptr := &arena.raw[arena.raw.len]
+        arena.raw.len += size
+        return ptr
+        
+    case Free: fallthrough 
+    case FreeAll: 
+        arena.raw.len = 0
     }
 
-    libc.printf(message)
     return nil
 }
 
-main :: fn() -> void {
-    alloc := Allocator {
-        &test
-    }
+// Allocates 'size' bytes and returns a raw pointer.
+Alloc :: fn(a: Allocator, size: u64) -> rawptr {
+    return a.func(a.payload, AllocType.Alloc, size, nil)
+}
 
-    alloc.func(nil, AllocType.Alloc, 10)
+// Frees up previously allocated memory.
+Free :: fn(a: Allocator, ptr: rawptr) -> void {
+    if ptr == nil return
+    a.func(a.payload, AllocType.Free, 0, ptr)
+}
+
+// Free up all items allocated by an 'Allocator'.
+FreeAll :: fn(a: Allocator) -> void {
+    a.func(a.payload, AllocType.FreeAll, 0, nil)
+}
+
+main :: fn() -> void {
+    arena := InitArena(100000)
+    alloc := InitArenaAllocator(&arena)
+    Alloc(alloc, 10)
+    Free(alloc, &arena)
 }
 
