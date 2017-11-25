@@ -1,0 +1,134 @@
+#import "tokens.kai"
+
+Pos :: tokens.Pos
+
+AstKind :: enum {
+    BadExpr,
+    Comment,
+    StructField,
+    EnumCase,
+    LocationDirective,
+    NilLiteral,
+    Ident,
+    Ellipsis,
+    BasicLit,
+    PolyParameterList,
+    ResultList,
+    IdentList,
+    FuncLit,
+    CompositeLit,
+    Paren,
+    Selector,
+    Subscript,
+    Slice,
+    Autocast,
+    Cast,
+    Call,
+    Unary,
+    Binary,
+    Ternary,
+    KeyValue,
+    PointerType,
+    ArrayType,
+    SliceType,
+    VectorType,
+    StructType,
+    PolyStructType,
+    EnumType,
+    UnionType,
+    VariantType,
+    PolyType,
+    VariadicType,
+    FuncType,
+    BadStmt,
+    Empty,
+    Label,
+    Assign,
+    Return,
+    Defer,
+    Using,
+    Branch,
+    Block,
+    If,
+    CaseClause,
+    Switch,
+    For,
+    ForIn,
+    Import,
+    Library,
+    Foreign,
+    DeclBlock,
+    Declaration,
+    BadDecl,
+    FunctionSpecialization,
+    StructSpecialization
+}
+
+Ast :: union {
+    BadExpr : struct {}
+    Comment : struct { text: string }
+    StructField : struct {}
+    EnumCase : struct {}
+    LocationDirective : struct {}
+    NilLiteral : struct {}
+    Ident : struct {}
+    Ellipsis : struct {}
+    BasicLit : struct {}
+    PolyParameterList : struct {}
+    ResultList : struct {}
+    IdentList : struct {}
+    FuncLit : struct {}
+    CompositeLit : struct {}
+    Paren : struct {}
+    Selector : struct {}
+    Subscript : struct {}
+    Slice : struct {}
+    Autocast : struct {}
+    Cast : struct {}
+    Call : struct {}
+    Unary : struct {}
+    Binary : struct {}
+    Ternary : struct {}
+    KeyValue : struct {}
+    PointerType : struct {}
+    ArrayType : struct {}
+    SliceType : struct {}
+    VectorType : struct {}
+    StructType : struct {}
+    PolyStructType : struct {}
+    EnumType : struct {}
+    UnionType : struct {}
+    VariantType : struct {}
+    PolyType : struct {}
+    VariadicType : struct {}
+    FuncType : struct {}
+    BadStmt : struct {}
+    Empty : struct {}
+    Label : struct {}
+    Assign : struct {}
+    Return: struct {}
+    Defer: struct {}
+    Using: struct {}
+    Branch: struct {}
+    Block : struct {}
+    If: struct {}
+    CaseClause : struct {}
+    Switch: struct {}
+    For: struct {}
+    ForIn : struct {}
+    Import: struct {}
+    Library : struct {}
+    Foreign : struct {}
+    DeclBlock : struct {}
+    Declaration : struct {}
+    BadDecl : struct {}
+    FunctionSpecialization : struct {}
+    StructSpecialization : struct {}
+}
+
+AstNode :: struct {
+    kind: AstKind
+    start,
+    end: Pos
+    ast: Ast
+}

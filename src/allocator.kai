@@ -1,0 +1,50 @@
+#import "libc.kai"
+
+AllocType :: enum {
+    Alloc,
+    Free,
+    FreeAll,
+    Realloc
+}
+
+AllocFunc :: *(data: rawptr, type: AllocType, size: u64) -> rawptr
+
+Allocator :: struct {
+    func: AllocFunc
+    payload: rawptr
+}
+
+Arena :: struct {
+    allocator: Allocator
+    offset: u64
+    raw: []u8
+}
+
+arenaAllocFunc :: fn() -> void {
+
+}
+
+
+test :: fn(data: rawptr, type: AllocType, size: u64) -> rawptr {
+    message: *u8
+
+    using AllocType
+    switch type {
+    case AllocType.Alloc: message = "Called 'Alloc'\n".raw
+    case Free: message = "Called 'Free'\n".raw
+    case FreeAll: message = "Called 'FreeAll'\n".raw
+    case Realloc: message = "Called 'Realloc'\n".raw
+    }
+
+    libc.printf(message)
+    return nil
+}
+
+main :: fn() -> void {
+    alloc := Allocator {
+        &test
+    }
+
+    alloc.func(nil, AllocType.Alloc, 10)
+}
+

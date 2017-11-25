@@ -1,0 +1,10 @@
+#import "tokens.kai"
+
+Lexer :: struct {
+
+}
+
+Init :: fn(lexer: *Lexer, path: *u8) -> bool {
+
+    return true
+}

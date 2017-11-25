@@ -1,0 +1,12 @@
+#library "libc"
+
+File :: rawptr
+
+#foreign libc #callconv "c" {
+    malloc  :: (size: u64) -> rawptr
+    fclose  :: (stream: File) -> i32
+    fopen   :: (path: *u8, args: *u8) -> File
+    fread   :: (buff: rawptr, size: u64, count: u64, file: File) -> u64
+    printf  :: (format: *u8, args: #cvargs ..any) -> i32
+    strlen  :: (str: *u8) -> u64
+}
