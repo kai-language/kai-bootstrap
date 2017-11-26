@@ -1,10 +1,10 @@
 #import "libc.kai"
 
 AllocType :: enum {
-    ATAlloc,
-    ATFree,
-    ATFreeAll,
-    ATRealloc
+    Alloc,
+    Free,
+    FreeAll,
+    Realloc
 }
 
 AllocFunc :: *(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr
@@ -53,9 +53,8 @@ DefaultAllocatorInit :: fn() -> Allocator {
 arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr {
     arena: *Arena = autocast payload
 
-    using AllocType
     switch type {
-    case ATAlloc: 
+    case AllocType.Alloc: 
         if arena.raw.len + size > arena.raw.cap {
             return nil
         }
@@ -63,10 +62,10 @@ arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: 
         arena.raw.len += size
         return ptr
         
-    case ATFree: fallthrough 
-    case ATFreeAll: 
+    case AllocType.Free: fallthrough 
+    case AllocType.FreeAll: 
         arena.raw.len = 0
-    case ATRealloc:
+    case AllocType.Realloc:
         buff := Realloc(arena.allocator, arena.raw.raw, oldsize, size)
         arena.raw.raw = buff
         arena.raw.cap = size
@@ -79,14 +78,14 @@ arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: 
 heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr {
     using AllocType
     switch type {
-    case ATAlloc:
+    case Alloc:
         return libc.malloc(size)
-    case ATFree:
+    case Free:
         libc.free(old)
         return(nil) // FIXME: @CompilerBug 'return nil' derails parser
-    case ATFreeAll: 
+    case FreeAll: 
         break
-    case ATRealloc:
+    case Realloc:
         return libc.realloc(old, size)
     }
 
@@ -95,21 +94,21 @@ heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: r
 
 // Allocates 'size' bytes and returns a raw pointer.
 Alloc :: fn(a: Allocator, size: u64) -> rawptr {
-    return a.func(a.payload, AllocType.ATAlloc, size, 0, nil)
+    return a.func(a.payload, AllocType.Alloc, size, 0, nil)
 }
 
 // Frees up previously allocated memory.
 Free :: fn(a: Allocator, ptr: rawptr) -> void {
     if ptr == nil return
-    a.func(a.payload, AllocType.ATFree, 0, 0, ptr)
+    a.func(a.payload, AllocType.Free, 0, 0, ptr)
 }
 
 // Free up all items allocated by an 'Allocator'.
 FreeAll :: fn(a: Allocator) -> void {
-    a.func(a.payload, AllocType.ATFreeAll, 0, 0, nil)
+    a.func(a.payload, AllocType.FreeAll, 0, 0, nil)
 }
 
 Realloc :: fn(a: Allocator, ptr: rawptr, oldsize, size: u64) -> rawptr {
-    return a.func(a.payload, AllocType.ATRealloc, size, oldsize, ptr)
+    return a.func(a.payload, AllocType.Realloc, size, oldsize, ptr)
 }
 

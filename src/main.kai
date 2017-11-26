@@ -3,12 +3,8 @@
 #import "source_file.kai" sf
 #import "ast.kai"
 #import "allocator.kai"
-#import "dbg.kai"
 
 main :: fn(argc: i32, argv: **u8) -> i32 {
-    dbg.assert(false, #file, #function, #line)
-
-
     if argc < 2 {
         libc.printf("ERROR: No input file\n".raw)
         return 1
