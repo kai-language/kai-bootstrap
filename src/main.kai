@@ -2,7 +2,7 @@
 
 #import "source_file.kai" sf
 #import "ast.kai"
-
+#import "allocator.kai"
 
 main :: fn(argc: i32, argv: **u8) -> i32 {
     if argc < 2 {

@@ -1,12 +1,13 @@
 #import "libc.kai"
 
 AllocType :: enum {
-    Alloc,
-    Free,
-    FreeAll
+    ATAlloc,
+    ATFree,
+    ATFreeAll,
+    ATRealloc
 }
 
-AllocFunc :: *(payload: rawptr, type: AllocType, size: u64, old: rawptr) -> rawptr
+AllocFunc :: *(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr
 
 Allocator :: struct {
     func: AllocFunc
@@ -18,29 +19,43 @@ Arena :: struct {
     raw: []u8
 }
 
-InitArena :: fn(size: u64) -> Arena {
-    raw : []u8
-    raw.raw = libc.malloc(size)
-    raw.cap = size 
-    raw.len = 0
-    return Arena {
-        raw: raw
-    }
+// Initialize an 'Arena' using the default allocator.
+ArenaInit :: fn(arena: *Arena, size: u64) -> void {
+    ArenaInitFromAllocator(arena, DefaultAllocatorInit(), size)    
 }
 
-InitArenaAllocator :: fn(arena: *Arena) -> Allocator {
+// Initialize an 'Arena' using a custom allocator.
+ArenaInitFromAllocator :: fn(arena: *Arena, a: Allocator, size: u64) -> void {
+    raw : []u8
+    raw.raw = Alloc(a, size)
+    raw.cap = size
+    raw.len = 0
+    arena.allocator = a
+    arena.raw = raw
+}
+
+// An 'Arena'-based allocator.
+ArenaAllocatorInit :: fn(arena: *Arena) -> Allocator {
     return Allocator {
         &arenaAllocFunc,
         arena
     }
 }
 
-arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size: u64, old: rawptr) -> rawptr {
+// A 'malloc'-based allocator.
+DefaultAllocatorInit :: fn() -> Allocator {
+    return Allocator {
+        &heapAllocFunc,
+        nil
+    }
+}
+
+arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr {
     arena: *Arena = autocast payload
 
     using AllocType
     switch type {
-    case Alloc: 
+    case ATAlloc: 
         if arena.raw.len + size > arena.raw.cap {
             return nil
         }
@@ -48,9 +63,25 @@ arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size: u64, old: rawptr) -
         arena.raw.len += size
         return ptr
         
-    case Free: fallthrough 
-    case FreeAll: 
+    case ATFree: fallthrough 
+    case ATFreeAll: 
         arena.raw.len = 0
+    case ATRealloc:
+        return Realloc(arena.allocator, arena.raw.raw, oldsize, size)
+    }
+
+    return nil
+}
+
+heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: rawptr) -> rawptr {
+    using AllocType
+    switch type {
+    case ATAlloc:
+        return libc.malloc(size)
+    case ATFree:
+        libc.free(old)
+        return(nil) // FIXME: @CompilerBug 'return nil' derails parser
+    case ATFreeAll: break
     }
 
     return nil
@@ -58,24 +89,21 @@ arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size: u64, old: rawptr) -
 
 // Allocates 'size' bytes and returns a raw pointer.
 Alloc :: fn(a: Allocator, size: u64) -> rawptr {
-    return a.func(a.payload, AllocType.Alloc, size, nil)
+    return a.func(a.payload, AllocType.ATAlloc, size, 0, nil)
 }
 
 // Frees up previously allocated memory.
 Free :: fn(a: Allocator, ptr: rawptr) -> void {
     if ptr == nil return
-    a.func(a.payload, AllocType.Free, 0, ptr)
+    a.func(a.payload, AllocType.ATFree, 0, 0, ptr)
 }
 
 // Free up all items allocated by an 'Allocator'.
 FreeAll :: fn(a: Allocator) -> void {
-    a.func(a.payload, AllocType.FreeAll, 0, nil)
+    a.func(a.payload, AllocType.ATFreeAll, 0, 0, nil)
 }
 
-main :: fn() -> void {
-    arena := InitArena(100000)
-    alloc := InitArenaAllocator(&arena)
-    Alloc(alloc, 10)
-    Free(alloc, &arena)
+Realloc :: fn(a: Allocator, ptr: rawptr, oldsize, size: u64) -> rawptr {
+    return a.func(a.payload, AllocType.ATRealloc, size, oldsize, ptr)
 }
 
