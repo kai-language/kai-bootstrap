@@ -4,6 +4,7 @@ File :: rawptr
 
 #foreign libc #callconv "c" {
     malloc  :: (size: u64) -> rawptr
+    realloc :: (ptr: rawptr, size: u64) -> rawptr
     free    :: (ptr: rawptr) -> void
     fclose  :: (stream: File) -> i32
     fopen   :: (path: *u8, args: *u8) -> File
