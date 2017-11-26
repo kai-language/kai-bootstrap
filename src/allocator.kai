@@ -67,7 +67,10 @@ arenaAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: 
     case ATFreeAll: 
         arena.raw.len = 0
     case ATRealloc:
-        return Realloc(arena.allocator, arena.raw.raw, oldsize, size)
+        buff := Realloc(arena.allocator, arena.raw.raw, oldsize, size)
+        arena.raw.raw = buff
+        arena.raw.cap = size
+        return buff
     }
 
     return nil
