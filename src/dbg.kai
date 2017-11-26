@@ -1,0 +1,6 @@
+#import "libc.kai"
+
+assert :: fn(cond: bool, file, func: string, line: u64) -> void {
+    if !cond
+        libc.printf("Assertion failure: %s:%s:%llu\n".raw, file.raw, func.raw, line)
+}
