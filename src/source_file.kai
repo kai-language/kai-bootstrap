@@ -1,13 +1,12 @@
+#import "lexer.kai"
 
 SourceFile :: struct {
     fullpath: string
     lines: u64
 }
 
-newSourceFile :: fn(path: string) -> SourceFile {
-    f := SourceFile {
+SourceFileInit :: fn(path: string) -> SourceFile {
+    return SourceFile {
         fullpath: path
     }
-
-    return f
 }

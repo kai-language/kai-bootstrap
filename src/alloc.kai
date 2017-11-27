@@ -92,6 +92,35 @@ heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: r
     return nil
 }
 
+// Read an entire file into memory.
+ReadFile :: fn(a: Allocator, path: string) -> []u8, bool {
+    using libc
+    file := fopen(path.raw, "r".raw)
+    if file == nil { return []u8{}, false }
+    defer fclose(file)
+
+    if fseek(file, 0, SEEK_END) != 0
+        return []u8{}, false
+
+    flen := ftell(file)
+    if flen == -1 || fseek(file, 0, SEEK_SET) != 0 
+        return []u8{}, false
+
+    len := cast(u64)flen
+
+    buff := Alloc(a, len)
+    len = fread(buff, 1, len, file)
+    if len == 0
+        return []u8{}, false
+
+    result : []u8
+    result.raw = buff
+    result.len = len
+    result.cap = 0
+
+    return result, true
+}
+
 // Allocates 'size' bytes and returns a raw pointer.
 Alloc :: fn(a: Allocator, size: u64) -> rawptr {
     return a.func(a.payload, AllocType.Alloc, size, 0, nil)
@@ -108,6 +137,7 @@ FreeAll :: fn(a: Allocator) -> void {
     a.func(a.payload, AllocType.FreeAll, 0, 0, nil)
 }
 
+// Reallocate memory.
 Realloc :: fn(a: Allocator, ptr: rawptr, oldsize, size: u64) -> rawptr {
     return a.func(a.payload, AllocType.Realloc, size, oldsize, ptr)
 }

@@ -1,6 +1,9 @@
 #library "libc"
 
 File :: rawptr
+SEEK_SET :: 0   /* set file offset to offset */
+SEEK_CUR :: 1   /* set file offset to current plus offset */
+SEEK_END :: 2   /* set file offset to EOF plus offset */
 
 #foreign libc #callconv "c" {
     malloc  :: (size: u64) -> rawptr
@@ -9,6 +12,9 @@ File :: rawptr
     fclose  :: (stream: File) -> i32
     fopen   :: (path: *u8, args: *u8) -> File
     fread   :: (buff: rawptr, size: u64, count: u64, file: File) -> u64
+    ftell   :: (stream: File) -> i64
+    fseek   :: (stream: File, offset: i64, origin: i32) -> i32
+    rewind  :: (stream: File) -> void
     printf  :: (format: *u8, args: #cvargs ..any) -> i32
     strlen  :: (str: *u8) -> u64
 }

@@ -1,0 +1,46 @@
+Hash32 :: fn(key: []u8, seed: u32) -> u32 {
+    data := key
+    blockCount := data.len / 4
+
+    h1 := seed
+    c1, c2: u32 = 0xcc9e2d51, 0x1b873593
+    end := data.raw + blockCount * 4
+    blocks : *u32 = autocast end
+    for i := -blockCount; i != 0; i += 1 {
+        k1 := blocks[i]
+
+        k1 *= c1
+        k1 = (k1 << 15) | (k1 >> (32 - 15))
+        k1 *= c2
+
+        h1 ^= k1
+        h1 = (h1 << 13) | (h1 >> (32 - 13))
+        h1 = h1*5+0xe6546b64
+    }
+
+    tail := data.raw + blockCount*4
+    k1: u32 = 0
+
+    switch data.len & 3 {
+    case 3: 
+        k1 ^= cast(u32)tail[2] << 16
+        fallthrough
+    case 2:
+        k1 ^= cast(u32)tail[1] << 8
+        fallthrough
+    case 1:
+        k1 ^= cast(u32)tail[0]
+        k1 *= c1
+        k1 = (k1 << 15) | (k1 >> (32 - 15))
+        k1 *= c2
+        h1 ^= k1
+    }
+
+    h1 ^= cast(u32)data.len
+    h1 ^= h1 >> 16
+    h1 *= 0x85ebca6b
+    h1 ^= h1 >> 13
+    h1 *= 0xc2b2ae35
+    h1 ^= h1 >> 16
+    return h1
+}

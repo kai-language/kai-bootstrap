@@ -1,10 +1,12 @@
+#import "alloc.kai"
 #import "tokens.kai"
 
 Lexer :: struct {
 
 }
 
-Init :: fn(lexer: *Lexer, path: *u8) -> bool {
+LexerInit :: fn(lexer: *Lexer, path: *u8) -> bool {
 
     return true
 }
+
