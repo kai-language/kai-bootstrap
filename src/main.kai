@@ -14,7 +14,12 @@ main :: fn(argc: i32, argv: **u8) -> i32 {
     path.raw = argv[1]
     path.len = libc.strlen(argv[1])
 
-    file := sf.SourceFileInit(path)
+    file: sf.SourceFile
+    ok := sf.SourceFileInit(&file, path)
+    if !ok {
+        libc.printf("ERROR: unable to parse file\n".raw)
+        return 2
+    }
 
     return 0
 }

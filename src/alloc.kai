@@ -92,32 +92,26 @@ heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: r
     return nil
 }
 
-// Read an entire file into memory.
-ReadFile :: fn(a: Allocator, path: string) -> []u8, bool {
+// Maps a file to an address through the kernel.
+ReadFile :: fn(path: string) -> []u8, bool {
     using libc
-    file := fopen(path.raw, "r".raw)
-    if file == nil { return []u8{}, false }
-    defer fclose(file)
-
-    if fseek(file, 0, SEEK_END) != 0
+    file := open(path.raw, O_RDONLY)
+    if file == -1 { return []u8{}, false }
+    defer close(file)
+    
+    stat: Stat
+    if fstat(file, &stat) < 0
         return []u8{}, false
 
-    flen := ftell(file)
-    if flen == -1 || fseek(file, 0, SEEK_SET) != 0 
+    len := stat.size
+    addr := mmap(nil, len, PROT_READ, MAP_PRIVATE, file, 0)
+    if cast(i64)addr < 0
         return []u8{}, false
 
-    len := cast(u64)flen
-
-    buff := Alloc(a, len)
-    len = fread(buff, 1, len, file)
-    if len == 0
-        return []u8{}, false
-
-    result : []u8
-    result.raw = buff
+    result: []u8
+    result.raw = autocast addr
     result.len = len
     result.cap = 0
-
     return result, true
 }
 

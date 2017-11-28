@@ -1,12 +1,22 @@
-#import "lexer.kai"
+#import "lexer.kai" lex
+#import "alloc.kai"
+#import "ast.kai"
 
 SourceFile :: struct {
+    arena: alloc.Arena
     fullpath: string
     lines: u64
 }
 
-SourceFileInit :: fn(path: string) -> SourceFile {
-    return SourceFile {
-        fullpath: path
-    }
+SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
+    lexer: lex.Lexer
+    ok := lex.LexerInit(&lexer, path)
+    if !ok
+        return false
+
+    file.fullpath = path
+    file.lines = 0
+    alloc.ArenaInit(&file.arena, sizeof(ast.AstNode) * lexer.data.len)
+
+    return true
 }

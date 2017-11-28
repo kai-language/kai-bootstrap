@@ -1,12 +1,210 @@
 #import "alloc.kai"
-#import "tokens.kai"
 
-Lexer :: struct {
+TokenKind :: enum {
+    Invalid,
+    Eof,
+    Comment,
 
+    Ident,
+    Directive,
+
+    Int,
+    Float,
+    String,
+
+    Add,
+    Sub,
+    Mul,
+    Quo,
+    Rem,
+
+    And,
+    Or,
+    Xor,
+    Shl,
+    Shr,
+
+    AssignAdd,
+    AssignSub,
+    AssignMul,
+    AssignQuo,
+    AssignRem,
+    
+    AssignAnd,
+    AssignOr,
+    AssignXor,
+    AssignShl,
+    AssignShr,
+
+    Land,
+    Lor,
+    
+    Lss,
+    Gtr,
+    Not,
+
+    Eql,
+    Neq,
+    Leq,
+    Geq,
+
+    Assign,
+    Ellipsis,
+    Dollar,
+    Question,
+    RetArrow,
+
+    Lparen,
+    Lbrack,
+    Lbrace,
+    Rparen,
+    Rbrack,
+    Rbrace,
+
+    Comma,
+    Period,
+    Colon,
+    Semicolon,
+
+    Cast,
+    Bitcast,
+    Autocast,
+
+    Using,
+
+    Goto,
+    Break,
+	Continue,
+    Fallthrough,
+   
+    Return,
+
+    If,
+    For,
+    Else,
+    Defer,
+    In,
+    Switch,
+    Case,
+    
+    Fn,
+    Union,
+    Variant,
+    Enum,
+    Struct,
+
+    Nil
 }
 
-LexerInit :: fn(lexer: *Lexer, path: *u8) -> bool {
+Pos :: struct {
+    fileno,
+    offset: u32
+}
+
+Position :: struct {
+    filename: string
+    offset,
+    line,
+    column: u32
+}
+
+Token :: struct {
+    kind: TokenKind
+    pos : Position
+    str : string 
+}
+
+Invalid := Token { TokenKind.Invalid }
+
+Lexer :: struct {
+    path: string
+    data: []u8
+    current: *u8
+}
+
+LexerInit :: fn(lexer: *Lexer, path: string) -> bool {
+    data, ok := alloc.ReadFile(path)
+    if !ok
+        return false
+
+    lexer.path = path
+    lexer.data = data
+    lexer.current = data.raw
 
     return true
 }
 
+NextToken :: fn(lexer: *Lexer) -> Token {
+    return Invalid
+}
+
+Describe :: fn(tok: Token) -> string {
+    using TokenKind
+    switch tok.kind {
+	case Invalid:   return "<illegal>"
+	case Eof:       return "<EOF>"
+	case Comment:   return "<comment>"
+	case Ident:     return "<ident>"
+	case Directive: return "<directive>"
+	case Int:       return "<int>"
+	case Float:     return "<float>"
+	case String:    return "<string>"
+	case Add:       return "+"
+	case Sub:       return "-"
+	case Mul:       return "*"
+	case Quo:       return "/"
+	case Rem:       return "%"
+	case And:       return "&"
+	case Or:        return "|"
+	case Xor:       return "^"
+	case Shl:       return "<<"
+	case Shr:       return ">>"
+	case Land:      return "&&"
+	case Lor:       return "||"
+	case Lss:       return "<"
+	case Gtr:       return ">"
+	case Not:       return "!"
+	case Eql:       return "=="
+	case Neq:       return "!="
+	case Leq:       return "<="
+	case Geq:       return ">="
+	case Assign:    return "="
+	case Ellipsis:  return ".."
+	case Dollar:    return "$"
+	case Question:  return "?"
+	case RetArrow:  return "->"
+	case Lparen:    return "("
+	case Lbrack:    return "["
+	case Lbrace:    return "{"
+	case Rparen:    return ")"
+	case Rbrack:    return "]"
+	case Rbrace:    return "}"
+	case Comma:     return ","
+	case Period:    return "."
+	case Colon:     return ":"
+	case Semicolon: return ";"
+	case Cast:      return "cast"
+	case Bitcast:   return "bitcast"
+	case Autocast:  return "autocast"
+	case Using:     return "using"
+	case Goto:      return "goto"
+	case Break:     return "break"
+	case Continue:  return "continue"
+	case Fallthrough: return "fallthrough"
+	case Return:    return "return"
+	case If:        return "if"
+	case For:       return "for"
+	case Else:      return "else"
+	case Defer:     return "defer"
+	case In:        return "in"
+	case Switch:    return "switch"
+	case Case:      return "case"
+	case Fn:        return "fn"
+	case Union:     return "union"
+	case Variant:   return "variant"
+	case Enum:      return "enum"
+	case Struct:    return "struct"
+	case Nil:       return "nil"
+    case: return "<unknown>"
+    }
+}

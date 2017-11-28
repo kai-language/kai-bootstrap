@@ -1,6 +1,4 @@
-#import "tokens.kai"
-
-Pos :: tokens.Pos
+#import "lexer.kai"
 
 AstKind :: enum {
     BadExpr,
@@ -129,6 +127,6 @@ Ast :: union {
 AstNode :: struct {
     kind: AstKind
     start,
-    end: Pos
+    end: lexer.Pos
     ast: Ast
 }
