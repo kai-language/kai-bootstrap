@@ -28,6 +28,12 @@ Stat :: struct {
     _reserve2:     i64  // RESERVED
 }
 
+Timespec :: struct {
+    tv_sec, tv_nsec: u64
+}
+
+CLOCK_PROCESS_CPUTIME_ID :: 12
+
 O_RDONLY    :: 0x0000 /* open for reading only */
 O_WRONLY    :: 0x0001 /* open for writing only */
 O_RDWR      :: 0x0002 /* open for reading and writing */
@@ -68,4 +74,9 @@ MAP_FAILED :: -1
     mmap    :: (addr: rawptr, len: u64, prot: i32, flags: i32, fd: i32, offset: u64) -> rawptr
     printf  :: (format: *u8, args: #cvargs ..any) -> i32
     strlen  :: (str: *u8) -> u64
+
+    sleep   :: (seconds: u32) -> void
+
+    clock_getres  :: (id: i32, res: *Timespec) -> i32
+    clock_gettime :: (id: i32, tp: *Timespec) -> i32
 }

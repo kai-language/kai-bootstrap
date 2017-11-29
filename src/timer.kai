@@ -1,0 +1,64 @@
+#import "libc.kai"
+
+GetClockTime :: fn() -> u64 {
+    ts: libc.Timespec
+    libc.clock_gettime(libc.CLOCK_PROCESS_CPUTIME_ID, &ts)
+    return (ts.tv_sec * 1000000000) + ts.tv_nsec
+}
+
+Timing :: struct {
+    start, stop: u64
+    label: string
+}
+
+Timings :: struct {
+    sections: []Timing
+}
+
+TimingsInit :: fn(t: *Timings, count: u64) -> void {
+    buff := libc.malloc(count * sizeof(Timing))
+    t.sections.raw = cast(*Timing)buff
+    t.sections.len = 0
+    t.sections.cap = count
+}
+
+StopSection :: fn(t: *Timings) -> void {
+    if t.sections.len > 0
+        t.sections[t.sections.len - 1].stop = GetClockTime()
+}
+
+StartSection :: fn(t: *Timings, label: string) -> void {
+    StopSection(t)
+    t.sections[t.sections.len] = MakeTiming(label)
+    t.sections.len += 1
+}
+
+MakeTiming :: fn(label: string) -> Timing {
+    t: Timing
+    t.start = GetClockTime()
+    t.label = label
+    return t
+}
+
+HumanReadableTime :: fn(t: f64) -> f64, string {
+    s:  f64 = 1000000000
+    ms: f64 = 1000000
+    us: f64 = 1000
+
+    if (t / s) >= 1.0
+        return t/s, "s"
+    else if (t/ms) >= 1.0
+        return t/ms, "ms"
+    else if (t/us) >= 1.0
+        return t/us, "µs"
+    else
+        return t, "ns"
+}
+
+PrintTimings :: fn(t: *Timings) -> void {
+    StopSection(t)
+    for section in t.sections {
+        ts, sym := HumanReadableTime(cast(f64)(section.stop - section.start))
+        libc.printf("%s took %.02f%s\n".raw, section.label.raw, ts, sym.raw)
+    }
+}

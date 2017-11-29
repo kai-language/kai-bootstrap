@@ -1,0 +1,56 @@
+#import "libc.kai"
+
+CodePoint :: u32
+
+InvalidCodePoint : u32 : 0xfffd
+
+FIRST_LEN :: [0x100]u64{
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+    4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1
+}
+MASK :: [..]u8{ 0xFF, 0xFF, 0x1F, 0xF, 0x7 }
+
+DecodeCodepoint :: fn(str: []u8) -> CodePoint, u64 {
+    if str.len == 0
+        return InvalidCodePoint, 0
+
+    b0 := str[0]
+    len := FIRST_LEN[cast(i64)b0]
+    val := cast(u32)(b0 & MASK[len])
+    
+    for i := 1; i < len; i += 1 {
+        val = (val << 6) | cast(u32)(str[i] & 0x3f)
+    }
+
+    return val, len
+}
+
+main :: fn(argc: i32, argv: **u8) -> i32 {
+    if argc < 2 {
+        libc.printf("Expected a utf-8 character\n".raw)
+        return 1
+    }
+
+    str: []u8
+    str.raw = argv[1]
+    str.len = libc.strlen(argv[1])
+
+    cp, size := DecodeCodepoint(str)
+    libc.printf("0x%X is %llu byte(s)\n".raw, cp, size)
+
+    return 0
+}
