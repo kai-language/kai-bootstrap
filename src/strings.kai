@@ -38,19 +38,3 @@ DecodeCodepoint :: fn(str: []u8) -> CodePoint, u64 {
 
     return val, len
 }
-
-main :: fn(argc: i32, argv: **u8) -> i32 {
-    if argc < 2 {
-        libc.printf("Expected a utf-8 character\n".raw)
-        return 1
-    }
-
-    str: []u8
-    str.raw = argv[1]
-    str.len = libc.strlen(argv[1])
-
-    cp, size := DecodeCodepoint(str)
-    libc.printf("0x%X is %llu byte(s)\n".raw, cp, size)
-
-    return 0
-}

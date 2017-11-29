@@ -29,11 +29,11 @@ StopSection :: fn(t: *Timings) -> void {
 
 StartSection :: fn(t: *Timings, label: string) -> void {
     StopSection(t)
-    t.sections[t.sections.len] = MakeTiming(label)
+    t.sections[t.sections.len] = TimingInit(label)
     t.sections.len += 1
 }
 
-MakeTiming :: fn(label: string) -> Timing {
+TimingInit :: fn(label: string) -> Timing {
     t: Timing
     t.start = GetClockTime()
     t.label = label
@@ -57,8 +57,12 @@ HumanReadableTime :: fn(t: f64) -> f64, string {
 
 PrintTimings :: fn(t: *Timings) -> void {
     StopSection(t)
+    libc.printf("╔═══════════════════════╦═════════╗\n".raw)
+    libc.printf("║ Pass                  ║ Time    ║\n".raw)
+    libc.printf("╠═══════════════════════╬═════════╣\n".raw)
     for section in t.sections {
         ts, sym := HumanReadableTime(cast(f64)(section.stop - section.start))
-        libc.printf("%s took %.02f%s\n".raw, section.label.raw, ts, sym.raw)
+        libc.printf("║ %s ║ %05.2f%s ║\n".raw, section.label.raw, ts, sym.raw)
     }
+    libc.printf("╚═══════════════════════╩═════════╝\n".raw)
 }
