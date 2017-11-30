@@ -1,8 +1,7 @@
-#import "libc.kai"
-
 CodePoint :: u32
 
-InvalidCodePoint : u32 : 0xfffd
+InvalidCodePoint : u32 : 0xFFFD
+EOF : u32 : 0xFFFFFFFF
 
 FIRST_LEN :: [0x100]u64{
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
@@ -37,4 +36,28 @@ DecodeCodepoint :: fn(str: []u8) -> CodePoint, u64 {
     }
 
     return val, len
+}
+
+IsAlpha :: fn(cp: CodePoint) -> bool {
+    // FIXME(Brett): for now we're not going to consider unicode values
+    if cp >= 0x100 && cp != EOF {
+        return true
+    }
+    return (cp >= cast(u32)"A" && cp <= cast(u32)"Z") || (cp >= cast(u32)"a" && cp <= cast(u32)"z")
+}
+
+IsNumeric :: fn(cp: CodePoint) -> bool {
+    return cp >= cast(u32)"0" && cp <= cast(u32)"9"
+}
+
+// FIXME(Brett): due to a compiler bug, rhs needs to be a string
+Compare :: fn(a: []u8, b: string) -> bool {
+    if a.len != b.len
+        return false
+
+    for i := 0; i < a.len; i += 1 {
+        if a[i] != b[i] return false
+    }
+
+    return true
 }

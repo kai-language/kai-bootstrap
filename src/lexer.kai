@@ -1,4 +1,7 @@
 #import "alloc.kai"
+#import "strings.kai"
+
+#import "libc.kai"
 
 TokenKind :: enum {
     Invalid,
@@ -111,7 +114,7 @@ Position :: struct {
 Token :: struct {
     kind: TokenKind
     pos : Position
-    str : string 
+    str : []u8 
 }
 
 Invalid := Token { TokenKind.Invalid }
@@ -119,23 +122,218 @@ Invalid := Token { TokenKind.Invalid }
 Lexer :: struct {
     path: string
     data: []u8
-    current: *u8
+    lineCount: u64
+    current: u64
+    currentCP: u32
 }
 
-LexerInit :: fn(lexer: *Lexer, path: string) -> bool {
+LexerInit :: fn(l: *Lexer, path: string) -> bool {
     data, ok := alloc.ReadFile(path)
     if !ok
         return false
 
-    lexer.path = path
-    lexer.data = data
-    lexer.current = data.raw
+    l.path = path
+    l.data = data
+    l.current = 0
+    l.lineCount = 1
+
+    NextCodepoint(l)
 
     return true
 }
 
-NextToken :: fn(lexer: *Lexer) -> Token {
+NextCodepoint :: fn(l: *Lexer) -> void {
+    if l.current >= l.data.len {
+        l.current = l.data.len - 1
+        curr := l.data[l.current]
+        if curr == cast(u8)"\n"
+            l.lineCount += 1
+        l.currentCP = strings.EOF
+    } else {
+        curr := l.data[l.current:]
+        // TODO(Brett): error handling on invalid codepoint
+        cp, size := strings.DecodeCodepoint(curr)
+
+        if cp == cast(u32)"\n"
+            l.lineCount += 1
+
+        l.currentCP = cp
+        l.current += size
+    }
+}
+
+SkipWhitespace :: fn(l: *Lexer) -> void {
+    // FIXME(Brett): @CompilerBug string -> int doesn't work in 'if' context
+    for true {
+        switch l.currentCP {
+        case " ":  fallthrough
+        case "\t": fallthrough
+        case "\n": fallthrough
+        case "\r": NextCodepoint(l)
+        case: return
+        }
+    }
+}
+
+NextToken :: fn(l: *Lexer) -> Token {
+    SkipWhitespace(l)
+
+    t: Token
+    t.kind = TokenKind.Invalid
+    t.str = l.data[l.current-1:l.current]
+    t.pos.filename = l.path
+    t.pos.line = cast(u32)l.lineCount
+    // FIXME(Brett): real value
+    t.pos.column = 0
+
+    cp := l.currentCP
+    if strings.IsAlpha(cp) {
+        offset := l.current
+        t.kind = TokenKind.Ident
+        for strings.IsAlpha(l.currentCP) || strings.IsNumeric(l.currentCP) {
+            NextCodepoint(l)
+        }
+
+        t.str.len = l.current - offset
+
+        keyword := GetKeyword(t.str)
+        if keyword != TokenKind.Invalid
+            t.kind = keyword
+    } else {
+        NextCodepoint(l)
+
+        using TokenKind
+        switch cp {
+        case strings.EOF: t.kind = Eof; t.str.len = 0
+
+        case "+": t.kind = switch2(l, Add, AssignAdd)
+        case "-": t.kind = switch3(l, Sub, AssignSub, RetArrow, ">")
+        case "*": t.kind = switch2(l, Mul, AssignMul)
+        case "/": t.kind = switch2(l, Quo, AssignQuo) // FIXME(Brett): comment support
+        case "%": t.kind = switch2(l, Rem, AssignRem)
+        case "^": t.kind = switch2(l, Xor, AssignXor)
+        case ">": t.kind = switch4(l, Gtr, Geq, Shr, AssignShr, ">")
+        case "<": t.kind = switch4(l, Lss, Leq, Shl, AssignShl, "<")
+        case "=": t.kind = switch2(l, Assign, Eql)
+        case "!": t.kind = switch2(l, Not,    Neq)
+        case "&": t.kind = switch3(l, And, AssignAnd, Land, "&")
+        case "|": t.kind = switch3(l, Or,  AssignOr,  Lor,  "|")
+        case ":": t.kind = Colon
+        case "$": t.kind = Dollar
+        case "?": t.kind = Question
+        case ",": t.kind = Comma
+        case ";": t.kind = Semicolon
+        case "(": t.kind = Lparen
+        case ")": t.kind = Rparen
+        case "[": t.kind = Lbrack
+        case "]": t.kind = Rbrack
+        case "{": t.kind = Lbrace
+        case "}": t.kind = Rbrace
+        case ".":
+            t.kind = Period
+            if l.currentCP == cast(u32)"." {
+                t.kind = Ellipsis
+                t.str.len = 2
+                NextCodepoint(l)
+            }
+        case: t.kind = Invalid
+        }
+    }
+
+    return t
+}
+
+GetKeyword :: fn(s: []u8) -> TokenKind {
+    using TokenKind
+    using strings
+
+    // TODO(Brett): order by most used keywords
+    if Compare(s, "autocast")
+        return Autocast
+    if Compare(s, "bitcast")
+        return Bitcast
+    if Compare(s, "break")
+        return Break
+    if Compare(s, "case")
+        return Case
+    if Compare(s, "cast")
+        return Cast
+    if Compare(s, "continue")
+        return Continue
+    if Compare(s, "defer")
+        return Defer
+    if Compare(s, "else")
+        return Else
+    if Compare(s, "enum")
+        return Enum
+    if Compare(s, "fallthrough")
+        return Fallthrough
+    if Compare(s, "fn")
+        return Fn
+    if Compare(s, "for")
+        return For
+    if Compare(s, "goto")
+        return Goto
+    if Compare(s, "if")
+        return If
+    if Compare(s, "in")
+        return In
+    if Compare(s, "nil")
+        return Nil
+    if Compare(s, "return")
+        return Return
+    if Compare(s, "struct")
+        return Struct
+    if Compare(s, "switch")
+        return Switch
+    if Compare(s, "union")
+        return Union
+    if Compare(s, "using")
+        return Using
+    if Compare(s, "variant")
+        return Variant
+
     return Invalid
+}
+
+switch2 :: fn(l: *Lexer, t1, t2: TokenKind) -> TokenKind {
+    if l.currentCP == cast(u32)"=" {
+        NextCodepoint(l)
+        return t2
+    }
+    return t1
+}
+
+switch3 :: fn(l: *Lexer, t1, t2, t3: TokenKind, ch: strings.CodePoint) -> TokenKind {
+    if l.currentCP == cast(u32)"=" {
+        NextCodepoint(l)
+        return t2
+    }
+
+    if l.currentCP == ch {
+        NextCodepoint(l)
+        return t3
+    }
+
+    return t1
+}
+
+switch4 :: fn(l: *Lexer, t1, t2 ,t3, t4: TokenKind, ch: strings.CodePoint) -> TokenKind {
+    if l.currentCP == cast(u32)"=" {
+        NextCodepoint(l)
+        return t2
+    }
+
+    if l.currentCP == ch {
+        NextCodepoint(l)
+        if l.currentCP == cast(u32)"=" {
+            NextCodepoint(l)
+            return t4
+        }
+        return t3
+    }
+
+    return t1
 }
 
 Describe :: fn(tok: Token) -> string {
@@ -159,6 +357,16 @@ Describe :: fn(tok: Token) -> string {
     case Xor:       return "^"
     case Shl:       return "<<"
     case Shr:       return ">>"
+    case AssignAdd: return "+="
+    case AssignSub: return "-="
+    case AssignMul: return "*="
+    case AssignQuo: return "/="
+    case AssignRem: return "%="
+    case AssignAnd: return "&="
+    case AssignOr:  return "|="
+    case AssignXor: return "^="
+    case AssignShl: return "<<="
+    case AssignShr: return ">>="
     case Land:      return "&&"
     case Lor:       return "||"
     case Lss:       return "<"

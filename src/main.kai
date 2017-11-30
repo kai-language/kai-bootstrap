@@ -25,12 +25,13 @@ main :: fn(argc: i32, argv: **u8) -> i32 {
         return 2
     }
 
+/*
     timer.StartSection(&timings, "Parsing              ")
     timer.StartSection(&timings, "Checking             ")
     timer.StartSection(&timings, "IR Generation        ")
     timer.StartSection(&timings, "Emitting Object Files")
     timer.StartSection(&timings, "Linking Object Files ")
     timer.PrintTimings(&timings)
-
+*/
     return 0
 }
