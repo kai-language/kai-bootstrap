@@ -1,4 +1,6 @@
-#import "lexer.kai"
+#import "lexer.kai" 
+
+Token :: lexer.Token
 
 AstKind :: enum {
     BadExpr,
@@ -62,71 +64,233 @@ AstKind :: enum {
     StructSpecialization
 }
 
+AstNode :: struct {
+    kind: AstKind
+    ast: Ast
+}
+
 Ast :: union {
-    BadExpr : struct {}
-    Comment : struct { text: string }
+    BadExpr : struct { begin, end: Token }
+
+    Comment : Token
+
     StructField : struct {}
+
     EnumCase : struct {}
-    LocationDirective : struct {}
-    NilLiteral : struct {}
-    Ident : struct {}
-    Ellipsis : struct {}
-    BasicLit : struct {}
+
+    LocationDirective : struct {
+        token: Token
+        ident: []u8
+    }
+
+    NilLiteral : Token
+
+    Ident : Token
+
+    Ellipsis : struct {
+        token: Token
+        expr: *AstNode
+    }
+
+    BasicLit : Token
+
     PolyParameterList : struct {}
+
     ResultList : struct {}
+
     IdentList : struct {}
-    FuncLit : struct {}
+
+    FuncLit : struct {
+        token: Token
+        type, 
+        body: *AstNode
+        flags: u8
+    }
+
     CompositeLit : struct {}
-    Paren : struct {}
-    Selector : struct {}
-    Subscript : struct {}
-    Slice : struct {}
-    Autocast : struct {}
-    Cast : struct {}
+
+    Paren : struct {
+        begin, end: Token
+        expr: *AstNode
+    }
+
+    Selector : struct {
+        token: Token
+        rec, sel: *AstNode
+    }
+
+    Subscript : struct {
+        begin, end: Token
+        rec,
+        index: *AstNode
+    }
+
+    Slice : struct {
+        begin, end: Token
+        expr,
+        lo,
+        hi: *AstNode
+    }
+
+    Autocast : struct {
+        token: Token
+        expr: *AstNode
+    }
+
+    Cast : struct {
+        token,
+        kind: Token
+        type,
+        expr: *AstNode
+    }
+
     Call : struct {}
-    Unary : struct {}
-    Binary : struct {}
-    Ternary : struct {}
-    KeyValue : struct {}
-    PointerType : struct {}
-    ArrayType : struct {}
-    SliceType : struct {}
-    VectorType : struct {}
+
+    Unary : struct {
+        token,
+        op: Token
+        element: *AstNode
+    }
+
+    Binary : struct {
+        op: Token
+        lhs, rhs: *AstNode
+    }
+
+    Ternary : struct {
+        qmark, colon: Token
+        cond,
+        then,
+        els: *AstNode
+    }
+
+    KeyValue : struct {
+        token: Token
+        key,
+        value: *AstNode
+    }
+
+    PointerType : struct {
+        token: Token
+        type: *AstNode
+    }
+
+    ArrayType : struct {
+        begin, end: Token
+        length,
+        type: *AstNode
+    }
+
+    SliceType : struct {
+        begin, end: Token
+        type: *AstNode
+    }
+
+    VectorType : struct {
+        begin, end: Token
+        size,
+        type: *AstNode
+    }
+
     StructType : struct {}
+
     PolyStructType : struct {}
+
     EnumType : struct {}
+
     UnionType : struct {}
+
     VariantType : struct {}
-    PolyType : struct {}
-    VariadicType : struct {}
+
+    PolyType : struct {
+        token: Token
+        type: *AstNode
+    }
+
+    VariadicType : struct {
+        token: Token
+        type: *AstNode
+        isCVargs: bool
+    }
+
     FuncType : struct {}
-    BadStmt : struct {}
-    Empty : struct {}
-    Label : struct {}
+
+    BadStmt : struct {
+        begin, end: Token
+    }
+
+    Empty : Token
+
+    Label : Token
+
     Assign : struct {}
+
     Return: struct {}
-    Defer: struct {}
-    Using: struct {}
-    Branch: struct {}
+
+    Defer: struct {
+        token: Token
+        stmt: *AstNode
+    }
+
+    Using: struct {
+        token: Token
+        expr: *AstNode
+    }
+
+    Branch: struct {
+        token: Token
+        label: *AstNode
+    }
+
     Block : struct {}
-    If: struct {}
+
+    If: struct {
+        token: Token
+        cond,
+        body,
+        els: *AstNode
+    }
+
     CaseClause : struct {}
+
     Switch: struct {}
-    For: struct {}
+
+    For: struct {
+        token: Token
+        init,
+        cond,
+        step,
+        body: *AstNode
+    }
+
     ForIn : struct {}
+
     Import: struct {}
-    Library : struct {}
-    Foreign : struct {}
+
+    Library : struct {
+        token: Token
+        path,
+        alias: *AstNode
+    }
+
+    Foreign : struct {
+        token: Token
+        library,
+        decl: *AstNode
+        linkname: []u8
+        callconv: []u8
+    }
+
     DeclBlock : struct {}
+
     Declaration : struct {}
-    BadDecl : struct {}
+
+    BadDecl : struct {
+        begin, end: Token
+    }
+
     FunctionSpecialization : struct {}
+
     StructSpecialization : struct {}
 }
 
-AstNode :: struct {
-    kind: AstKind
-    start,
-    end: lexer.Pos
-    ast: Ast
-}
