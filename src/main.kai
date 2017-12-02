@@ -1,14 +1,19 @@
 #import "libc.kai"
 
-#import "source_file.kai" sf
-#import "ast.kai"
-#import "alloc.kai"
 #import "timer.kai"
+#import "errors.kai"
+#import "source_file.kai" sf
+
+Result :: enum(i32) {
+    Ok,
+    NoInput,
+    Error
+}
 
 main :: fn(argc: i32, argv: **u8) -> i32 {
     if argc < 2 {
         libc.printf("ERROR: No input file\n".raw)
-        return 1
+        return Result.NoInput
     }
     path: string
     path.raw = argv[1]
@@ -22,9 +27,9 @@ main :: fn(argc: i32, argv: **u8) -> i32 {
     ok := sf.SourceFileInit(&file, path)
     if !ok {
         libc.printf("ERROR: unable to parse file\n".raw)
-        return 2
+        return Result.Error
     }
-
+    
 /*
     timer.StartSection(&timings, "Parsing              ")
     timer.StartSection(&timings, "Checking             ")
@@ -33,5 +38,10 @@ main :: fn(argc: i32, argv: **u8) -> i32 {
     timer.StartSection(&timings, "Linking Object Files ")
     timer.PrintTimings(&timings)
 */
-    return 0
+
+    if errors.GlobalCollector.count > 0 {
+        return Result.Error
+    }
+
+    return Result.Ok
 }

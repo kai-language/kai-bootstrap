@@ -1,6 +1,7 @@
 #import "lexer.kai" lex
 #import "alloc.kai"
 #import "ast.kai"
+#import "errors.kai"
 
 #import "libc.kai"
 
@@ -15,6 +16,7 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
     ok := lex.LexerInit(&lexer, path)
     if !ok
         return false
+
     for true {
         tok := lex.NextToken(&lexer)
         libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"".raw, lex.Describe(tok).raw)

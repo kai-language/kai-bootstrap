@@ -1,4 +1,5 @@
 #import "alloc.kai"
+#import "errors.kai"
 #import "strings.kai"
 
 #import "libc.kai"
