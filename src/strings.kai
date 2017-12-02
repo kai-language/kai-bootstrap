@@ -1,3 +1,5 @@
+#import "alloc.kai"
+
 CodePoint :: u32
 
 InvalidCodePoint : u32 : 0xFFFD
@@ -60,4 +62,52 @@ Compare :: fn(a: []u8, b: string) -> bool {
     }
 
     return true
+}
+
+/**
+    Escapes a character.
+
+    returns:
+        bool: `true` if the operation was successful
+        bool: `true` if the escaped character is larger than 1 byte
+*/
+EscapeChar :: fn(str: []u8, cp: *CodePoint, tail: []u8) -> bool, bool {
+    return true, false
+}
+
+/** 
+    Removes surrounding quotes and escapes string. 
+
+    returns:
+        bool: `true` if the operation was successful
+        bool: `true` if the operation allocated additional memory
+*/
+Escape :: fn(a: alloc.Allocator, str: *[]u8) -> bool, bool {
+    s := <str
+
+    if s.len < 2
+        return false, false
+
+    quote := s[0]
+    if s[s.len-1] != quote && quote != cast(u8)"\""
+        return false, false
+
+    // trim leading and trailing '"'
+    s = s[1:s.len-1]
+
+    requiresEscape := false
+    for c in s {
+        if c == cast(u8)"\\" || c == cast(u8)"\"" {
+            requiresEscape = true
+            break
+        }
+    }
+
+    if !requiresEscape {
+        <str = s
+        return true, false
+    }
+
+    //TODO(Brett): modify escaped string
+    return true, true
 }
