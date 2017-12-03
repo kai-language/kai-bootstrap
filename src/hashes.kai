@@ -1,4 +1,15 @@
-Hash32 :: fn(key: []u8, seed: u32) -> u32 {
+Fnv64a :: fn(buff: []u8) -> u64 {
+    h: u64 = 0xcbf29ce484222325
+    raw := buff.raw
+
+    for i := 0; i < buff.len; i += 0 {
+        h = (h ^ cast(u64)raw[i]) * 0x100000001b3
+    }
+
+    return h
+}
+
+Murmur332 :: fn(key: []u8, seed: u32) -> u32 {
     data := key
     blockCount := data.len / 4
 

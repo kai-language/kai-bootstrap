@@ -178,10 +178,11 @@ NextCodePoint :: fn(l: *Lexer) -> void {
 SkipWhitespace :: fn(l: *Lexer) -> void {
     for true {
         switch l.currentCP {
-        case " ":
-            if !l.insertSemi
-                NextCodePoint(l)
-        case "\t", "\n", "\r":
+        case "\n":
+            if l.insertSemi
+                return
+            NextCodePoint(l)
+        case " ", "\t", "\r":
             NextCodePoint(l)
         case: return
         }
