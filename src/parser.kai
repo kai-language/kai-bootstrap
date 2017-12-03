@@ -8,7 +8,8 @@
 SourceFile :: struct {
     arena: alloc.Arena
     fullpath: string
-    lines: u64
+    lexer: lex.Lexer
+    tokens: []lex.Token
 }
 
 SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
@@ -19,18 +20,17 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
 
     for true {
         tok := lex.NextToken(&lexer)
-        libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"".raw, lex.Describe(tok).raw)
+        /*libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"".raw, lex.Describe(tok).raw)
         for char in tok.str {
             libc.printf("%c".raw, char)
         }
         libc.printf("\"\x1b[0m\n".raw)
-
-        if tok.kind == lex.TokenKind.Invalid || tok.kind == lex.TokenKind.Eof
+        */
+        if tok.kind == lex.TokenKind.Eof
             break
     }
 
     file.fullpath = path
-    file.lines = 0
     alloc.ArenaInit(&file.arena, sizeof(ast.AstNode) * lexer.data.len)
 
     return true

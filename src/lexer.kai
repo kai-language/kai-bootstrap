@@ -2,8 +2,6 @@
 #import "errors.kai"
 #import "strings.kai"
 
-#import "libc.kai"
-
 TokenKind :: enum {
     Invalid,
     Eof,
@@ -356,7 +354,13 @@ NextToken :: fn(l: *Lexer) -> Token {
         case "+": t.kind = switch2(l, Add, AssignAdd)
         case "-": t.kind = switch3(l, Sub, AssignSub, RetArrow, ">")
         case "*": t.kind = switch2(l, Mul, AssignMul)
-        case "/": t.kind = switch2(l, Quo, AssignQuo) // FIXME(Brett): comment support
+        case "/":
+            if l.currentCP == cast(u32)"/" || l.currentCP == cast(u32)"*" {
+                if l.insertSemi && findLineEnd(l) {
+                }
+            } else {
+                t.kind = switch2(l, Quo, AssignQuo)
+            }
         case "%": t.kind = switch2(l, Rem, AssignRem)
         case "^": t.kind = switch2(l, Xor, AssignXor)
         case ">": t.kind = switch4(l, Gtr, Geq, Shr, AssignShr, ">")
@@ -395,51 +399,66 @@ GetKeyword :: fn(s: []u8) -> TokenKind {
     using TokenKind
     using strings
 
-    if Compare(s, "autocast")
-        return Autocast
-    if Compare(s, "bitcast")
-        return Bitcast
-    if Compare(s, "break")
-        return Break
-    if Compare(s, "case")
-        return Case
-    if Compare(s, "cast")
-        return Cast
-    if Compare(s, "continue")
-        return Continue
-    if Compare(s, "defer")
-        return Defer
-    if Compare(s, "else")
-        return Else
-    if Compare(s, "enum")
-        return Enum
-    if Compare(s, "fallthrough")
-        return Fallthrough
-    if Compare(s, "fn")
-        return Fn
-    if Compare(s, "for")
-        return For
-    if Compare(s, "goto")
-        return Goto
-    if Compare(s, "if")
-        return If
-    if Compare(s, "in")
-        return In
-    if Compare(s, "nil")
-        return Nil
-    if Compare(s, "return")
-        return Return
-    if Compare(s, "struct")
-        return Struct
-    if Compare(s, "switch")
-        return Switch
-    if Compare(s, "union")
-        return Union
-    if Compare(s, "using")
-        return Using
-    if Compare(s, "variant")
-        return Variant
-
+    switch s[0] {
+    case "a":
+        if Compare(s, "autocast")
+            return Autocast
+    case "b":
+        if Compare(s, "bitcast")
+            return Bitcast
+        if Compare(s, "break")
+            return Break
+    case "c":
+        if Compare(s, "case")
+            return Case
+        if Compare(s, "cast")
+            return Cast
+        if Compare(s, "continue")
+            return Continue
+    case "d":
+        if Compare(s, "defer")
+            return Defer
+    case "e":
+        if Compare(s, "else")
+            return Else
+        if Compare(s, "enum")
+            return Enum
+    case "f":
+        if Compare(s, "fallthrough")
+            return Fallthrough
+        if Compare(s, "fn")
+            return Fn
+        if Compare(s, "for")
+            return For
+    case "g":
+        if Compare(s, "goto")
+            return Goto
+    case "i":
+        if Compare(s, "if")
+            return If
+        if Compare(s, "in")
+            return In
+    case "n":
+        if Compare(s, "nil")
+            return Nil
+    case "r":
+        if Compare(s, "return")
+            return Return
+    case "s":
+        if Compare(s, "struct")
+            return Struct
+        if Compare(s, "switch")
+            return Switch
+    case "u":
+        if Compare(s, "union")
+            return Union
+        if Compare(s, "using")
+            return Using
+    case "v":
+        if Compare(s, "variant")
+            return Variant
+    }
+    
     return Ident
 }
 
@@ -481,6 +500,11 @@ switch4 :: fn(l: *Lexer, t1, t2 ,t3, t4: TokenKind, ch: strings.CodePoint) -> To
     }
 
     return t1
+}
+
+// TODO(Brett)
+findLineEnd :: fn(l: *Lexer) -> bool {
+    return true
 }
 
 error :: fn(l: *Lexer, message: string) -> void {

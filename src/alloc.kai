@@ -136,3 +136,25 @@ Realloc :: fn(a: Allocator, ptr: rawptr, oldsize, size: u64) -> rawptr {
     return a.func(a.payload, AllocType.Realloc, size, oldsize, ptr)
 }
 
+ArrayInit :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
+    array.raw = cast(*T)Alloc(a, sizeof(T) * cap)
+    array.len = 0
+    array.cap = cap
+}
+
+MakeArray :: fn(raw: *$T, len, cap: u64) -> []T {
+    array: []T
+    array.raw = raw
+    array.len = len
+    array.cap = cap
+    return array
+}
+
+Grow :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
+    newCap := cap/2 * 3
+    
+}
+
+Append :: fn(a: Allocator, array: *[]$T, val: T) -> void {
+
+}

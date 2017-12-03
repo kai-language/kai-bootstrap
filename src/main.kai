@@ -2,7 +2,7 @@
 
 #import "timer.kai"
 #import "errors.kai"
-#import "source_file.kai" sf
+#import "parser.kai"
 
 Result :: enum(i32) {
     Ok,
@@ -23,21 +23,21 @@ main :: fn(argc: i32, argv: **u8) -> i32 {
     timer.TimingsInit(&timings, 10)
 
     timer.StartSection(&timings, "Lexing               ")
-    file: sf.SourceFile
-    ok := sf.SourceFileInit(&file, path)
+    file: parser.SourceFile
+    ok := parser.SourceFileInit(&file, path)
     if !ok {
         libc.printf("ERROR: unable to parse file\n".raw)
         return Result.Error
     }
     
-/*
+    /*
     timer.StartSection(&timings, "Parsing              ")
     timer.StartSection(&timings, "Checking             ")
     timer.StartSection(&timings, "IR Generation        ")
     timer.StartSection(&timings, "Emitting Object Files")
     timer.StartSection(&timings, "Linking Object Files ")
     timer.PrintTimings(&timings)
-*/
+    */
 
     if errors.GlobalCollector.count > 0 {
         return Result.Error
