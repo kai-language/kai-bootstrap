@@ -25,7 +25,7 @@ FIRST_LEN :: [0x100]u64{
 }
 MASK :: [..]u8{ 0xFF, 0xFF, 0x1F, 0xF, 0x7 }
 
-DecodeCodepoint :: fn(str: []u8) -> CodePoint, u64 {
+DecodeCodePoint :: fn(str: []u8) -> CodePoint, u64 {
     if str.len == 0
         return InvalidCodePoint, 0
 
@@ -45,14 +45,13 @@ IsAlpha :: fn(cp: CodePoint) -> bool {
     if cp >= 0x100 && cp != EOF {
         return true
     }
-    return (cp >= cast(u32)"A" && cp <= cast(u32)"Z") || (cp >= cast(u32)"a" && cp <= cast(u32)"z")
+    return (cp >= cast(u32)"A" && cp <= cast(u32)"Z") || (cp >= cast(u32)"a" && cp <= cast(u32)"z") || cp == cast(u32)"_"
 }
 
 IsNumeric :: fn(cp: CodePoint) -> bool {
     return cp >= cast(u32)"0" && cp <= cast(u32)"9"
 }
 
-// FIXME(Brett): due to a compiler bug, rhs needs to be a string
 Compare :: fn(a: []u8, b: string) -> bool {
     if a.len != b.len
         return false

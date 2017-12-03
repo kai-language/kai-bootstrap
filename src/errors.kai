@@ -1,4 +1,3 @@
-#import "ast.kai"
 #import "libc.kai"
 #import "lexer.kai"
 
@@ -9,9 +8,9 @@ Collector :: struct {
 
 GlobalCollector : Collector
 
-Error :: fn(node: ast.AstNode, message: string) -> void {
-    tok := node.ast.Ident
+Error :: fn(tok: lexer.Token, message: string) -> void {
     pos := tok.pos
     libc.printf("ERROR(%s:%d:%d): %s\n".raw, pos.filename.raw, pos.line, pos.column, message.raw)
     GlobalCollector.count += 1
+    GlobalCollector.prev = tok
 }
