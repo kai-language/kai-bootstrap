@@ -3,11 +3,15 @@
 #import "ast.kai"
 #import "errors.kai"
 
+#import "libc.kai"
+
 SourceFile :: struct {
     arena: alloc.Arena
     fullpath: string
     lexer: lex.Lexer
     tokens: []lex.Token
+    tokenIndex: u64
+    currentToken: lex.Token
 }
 
 SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
@@ -22,22 +26,67 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
     for true {
         tok := lex.NextToken(&lexer)
         alloc.Append(allocator, &file.tokens, tok)
-        /*libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"".raw, lex.Describe(tok).raw)
-        for char in tok.str {
-            libc.printf("%c".raw, char)
-        }
-        libc.printf("\"\x1b[0m\n".raw)
-        */
+
+        libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"%.*s\"\x1b[0m\n".raw, lex.Describe(tok).raw, tok.str.len, tok.str.raw)
+
         if tok.kind == lex.TokenKind.Eof
             break
     }
-
-    node: ast.AstNode
-    node.kind = ast.AstKind.Ellipsis
-    node.ast.Ellipsis.expr = nil;
 
     file.fullpath = path
     alloc.ArenaInit(&file.arena, sizeof(ast.AstNode) * lexer.data.len)
 
     return true
+}
+
+MakeNode :: fn(f: *SourceFile, kind: ast.AstKind) -> *ast.AstNode {
+    using alloc
+    arena := &f.arena
+    node := cast(*ast.AstNode)Alloc(ArenaAllocatorInit(arena), sizeof(ast.AstNode))
+    node.kind = kind
+    return node
+}
+
+
+MakeBadExpr :: fn(f: *SourceFile, begin, end: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.BadExpr)
+    node.ast.BadExpr.begin = begin
+    node.ast.BadExpr.end = end
+    return node
+}
+
+MakeIdentNode :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Ident)
+    node.ast.Ident = token
+    return node
+}
+
+MakeEllipsisNode :: fn(f: *SourceFile, expr: *ast.AstNode, token: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Ellipsis)
+    node.ast.Ellipsis.expr = expr
+    node.ast.Ellipsis.token = token
+    return node
+}
+
+MakeBasicLitNode :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.BasicLit)
+    node.ast.BasicLit = token
+    return node
+}
+
+next0 :: fn(f: *SourceFile) -> void {
+    if f.tokenIndex+1 >= f.tokens.len {
+        // TODO(Brett): error
+        return
+    }
+
+    f.currentToken = f.tokens[f.tokenIndex]
+    f.tokenIndex += 1
+}
+
+next :: fn(f: *SourceFile) -> void {
+    next0(f)
+    for f.currentToken.kind == lex.TokenKind.Comment {
+        next0(f)
+    }
 }
