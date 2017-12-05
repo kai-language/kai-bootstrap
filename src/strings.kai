@@ -52,7 +52,7 @@ IsNumeric :: fn(cp: CodePoint) -> bool {
     return cp >= cast(u32)"0" && cp <= cast(u32)"9"
 }
 
-Compare :: fn(a: []u8, b: string) -> bool {
+Compare :: fn(a, b: []u8) -> bool {
     if a.len != b.len
         return false
 

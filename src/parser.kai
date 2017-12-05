@@ -3,8 +3,6 @@
 #import "ast.kai"
 #import "errors.kai"
 
-#import "libc.kai"
-
 SourceFile :: struct {
     arena: alloc.Arena
     fullpath: string
@@ -18,8 +16,12 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
     if !ok
         return false
 
+    allocator := alloc.DefaultAllocatorInit()
+    alloc.ArrayInit(allocator, &file.tokens, lexer.data.len)
+
     for true {
         tok := lex.NextToken(&lexer)
+        alloc.Append(allocator, &file.tokens, tok)
         /*libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"".raw, lex.Describe(tok).raw)
         for char in tok.str {
             libc.printf("%c".raw, char)
@@ -29,6 +31,10 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
         if tok.kind == lex.TokenKind.Eof
             break
     }
+
+    node: ast.AstNode
+    node.kind = ast.AstKind.Ellipsis
+    node.ast.Ellipsis.expr = nil;
 
     file.fullpath = path
     alloc.ArenaInit(&file.arena, sizeof(ast.AstNode) * lexer.data.len)

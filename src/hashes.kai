@@ -1,9 +1,8 @@
 Fnv64a :: fn(buff: []u8) -> u64 {
     h: u64 = 0xcbf29ce484222325
-    raw := buff.raw
 
-    for i := 0; i < buff.len; i += 0 {
-        h = (h ^ cast(u64)raw[i]) * 0x100000001b3
+    for c in buff {
+        h = (h ^ cast(u64)c) * 0x100000001b3
     }
 
     return h

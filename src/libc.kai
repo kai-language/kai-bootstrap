@@ -65,6 +65,7 @@ MAP_FAILED :: -1
 #foreign libc #callconv "c" {
     malloc  :: (size: u64) -> rawptr
     realloc :: (ptr: rawptr, size: u64) -> rawptr
+    memcpy  :: (dst, src: rawptr, size: u64) -> rawptr
     free    :: (ptr: rawptr) -> void
     open    :: (path: *u8, flags: i32) -> i32
     close   :: (fd: i32) -> i32

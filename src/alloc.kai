@@ -151,10 +151,27 @@ MakeArray :: fn(raw: *$T, len, cap: u64) -> []T {
 }
 
 Grow :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
-    newCap := cap/2 * 3
-    
+    newCap := array.cap/2 * 3
+    if newCap < cap
+        newCap = cap
+    UpdateCapacity(a, array, newCap)
 }
 
-Append :: fn(a: Allocator, array: *[]$T, val: T) -> void {
+UpdateCapacity :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
+    if array.cap == cap return
 
+    newBuff := Alloc(a, sizeof(T) * cap)
+    libc.memcpy(newBuff, array.raw, sizeof(T)*array.cap)
+    Free(a, array.raw)
+    array.raw = cast(*T)newBuff
+    array.cap = cap
+}
+
+
+Append :: fn(a: Allocator, array: *[]$T, val: T) -> void {
+    if array.cap < array.len+1
+        Grow(a, array, 0)
+
+    array.raw[array.len] = val
+    array.len += 1
 }
