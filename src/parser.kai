@@ -55,22 +55,235 @@ MakeBadExpr :: fn(f: *SourceFile, begin, end: lex.Token) -> *ast.AstNode {
     return node
 }
 
-MakeIdentNode :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
+MakeIdent :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.Ident)
     node.ast.Ident = token
     return node
 }
 
-MakeEllipsisNode :: fn(f: *SourceFile, expr: *ast.AstNode, token: lex.Token) -> *ast.AstNode {
+MakeEllipsis :: fn(f: *SourceFile, expr: *ast.AstNode, token: lex.Token) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.Ellipsis)
     node.ast.Ellipsis.expr = expr
     node.ast.Ellipsis.token = token
     return node
 }
 
-MakeBasicLitNode :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
+MakeBasicLit :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.BasicLit)
     node.ast.BasicLit = token
+    return node
+}
+
+MakeFuncLit :: fn(f: *SourceFile, token: lex.Token, type, body: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.FuncLit)
+    node.ast.FuncLit.token = token
+    node.ast.FuncLit.type = type
+    node.ast.FuncLit.body = body
+    return node
+}
+
+MakeParen :: fn(f: *SourceFile, begin, end: lex.Token, expr: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Paren)
+    node.ast.Paren.begin = begin
+    node.ast.Paren.end = end
+    node.ast.Paren.expr = expr
+    return node
+}
+
+MakeSelector :: fn(f: *SourceFile, token: lex.Token, rec, sel: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Selector)
+    node.ast.Selector.token = token
+    node.ast.Selector.rec = rec
+    node.ast.Selector.sel = sel
+    return node
+}
+
+MakeSubscript :: fn(f: *SourceFile, begin, end: lex.Token, rec, index: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Subscript)
+    node.ast.Subscript.begin = begin
+    node.ast.Subscript.end = end
+    node.ast.Subscript.rec = rec
+    node.ast.Subscript.index = index
+    return node
+}
+
+MakeSlice :: fn(f: *SourceFile, begin, end: lex.Token, expr, hi, lo: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Slice)
+    node.ast.Slice.begin = begin
+    node.ast.Slice.end = end
+    node.ast.Slice.expr = expr
+    node.ast.Slice.hi = hi
+    node.ast.Slice.lo = lo
+    return node
+}
+
+MakeAutocast :: fn(f: *SourceFile, token: lex.Token, expr: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Autocast)
+    node.ast.Autocast.token = token
+    node.ast.Autocast.expr = expr
+    return node
+}
+
+MakeCast :: fn(f: *SourceFile, token, kind: lex.Token, type, expr: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Cast)
+    node.ast.Cast.token = token
+    node.ast.Cast.kind = kind
+    node.ast.Cast.type = type
+    node.ast.Cast.expr = expr
+    return node
+}
+
+MakeUnary :: fn(f: *SourceFile, token, op: lex.Token, element: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Unary)
+    node.ast.Unary.token = token
+    node.ast.Unary.op = op
+    node.ast.Unary.element = element
+    return node
+}
+
+MakeBinary :: fn(f: *SourceFile, op: lex.Token, lhs, rhs: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Binary)
+    node.ast.Binary.op = op
+    node.ast.Binary.lhs = lhs
+    node.ast.Binary.rhs = rhs
+    return node
+}
+
+MakeTernary :: fn(f: *SourceFile, qmark, colon: lex.Token, cond, then, els: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Ternary)
+    node.ast.Ternary.qmark = qmark
+    node.ast.Ternary.colon = colon
+    node.ast.Ternary.cond = cond
+    node.ast.Ternary.then = then
+    node.ast.Ternary.els = els
+    return node
+}
+
+MakeKeyValue :: fn(f: *SourceFile, token: lex.Token, key, value: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.KeyValue)
+    node.ast.KeyValue.token = token
+    node.ast.KeyValue.key = key
+    node.ast.KeyValue.value = value
+    return node
+}
+
+MakePointerType :: fn(f: *SourceFile, token: lex.Token, type: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.PointerType)
+    node.ast.PointerType.token = token
+    node.ast.PointerType.type = type
+    return node
+}
+
+MakeArrayType :: fn(f: *SourceFile, begin, end: lex.Token, length, type: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.ArrayType)
+    node.ast.ArrayType.begin = begin
+    node.ast.ArrayType.end = end
+    node.ast.ArrayType.length = length
+    node.ast.ArrayType.type = type
+    return node
+}
+
+MakeSliceType :: fn(f: *SourceFile, begin, end: lex.Token, type: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.SliceType)
+    node.ast.SliceType.begin = begin
+    node.ast.SliceType.end = end
+    node.ast.SliceType.type = type
+    return node
+}
+
+MakeVectorType :: fn(f: *SourceFile, begin, end: lex.Token, size, type: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.VectorType)
+    node.ast.VectorType.begin = begin
+    node.ast.VectorType.end = end
+    node.ast.VectorType.size = size
+    node.ast.VectorType.type = type
+    return node
+}
+
+MakePolyType :: fn(f: *SourceFile, token: lex.Token, type: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.PolyType)
+    node.ast.PolyType.token = token
+    node.ast.PolyType.type = type
+    return node
+}
+
+MakeVariadicType :: fn(f: *SourceFile, token: lex.Token, type: *ast.AstNode, isCVargs: bool) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.VariadicType)
+    node.ast.VariadicType.token = token
+    node.ast.VariadicType.type = type
+    node.ast.VariadicType.isCVargs = isCVargs
+    return node
+}
+
+MakeBadStmt :: fn(f: *SourceFile, begin, end: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.BadStmt)
+    node.ast.BadStmt.begin = begin
+    node.ast.BadStmt.end = end
+    return node
+}
+
+MakeDefer :: fn(f: *SourceFile, token: lex.Token, stmt: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Defer)
+    node.ast.Defer.token = token
+    node.ast.Defer.stmt = stmt
+    return node
+}
+
+MakeUsing :: fn(f: *SourceFile, token: lex.Token, expr: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Using)
+    node.ast.Using.token = token
+    node.ast.Using.expr = expr
+    return node
+}
+
+MakeBranch :: fn(f: *SourceFile, token: lex.Token, label: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Branch)
+    node.ast.Branch.token = token
+    node.ast.Branch.label = label
+    return node
+}
+
+MakeIf :: fn(f: *SourceFile, token: lex.Token, cond, body, els: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.If)
+    node.ast.If.token = token
+    node.ast.If.cond = cond
+    node.ast.If.body = body
+    node.ast.If.els = els
+    return node
+}
+
+MakeFor :: fn(f: *SourceFile, token: lex.Token, init, cond, step, body: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.For)
+    node.ast.For.token = token
+    node.ast.For.init = init
+    node.ast.For.cond = cond
+    node.ast.For.step = step
+    node.ast.For.body = body
+    return node
+}
+
+MakeLibrary :: fn(f: *SourceFile, token: lex.Token, path, alias: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Library)
+    node.ast.Library.token = token
+    node.ast.Library.path = path
+    node.ast.Library.alias = alias
+    return node
+}
+
+MakeForeign :: fn(f: *SourceFile, token: lex.Token, library, decl: *ast.AstNode, linkname, callconv: []u8) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Foreign)
+    node.ast.Foreign.token = token
+    node.ast.Foreign.library = library
+    node.ast.Foreign.decl = decl
+    node.ast.Foreign.linkname = linkname
+    node.ast.Foreign.callconv = callconv
+    return node
+}
+
+MakeBadDecl :: fn(f: *SourceFile, begin, end: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.BadDecl)
+    node.ast.BadDecl.begin = begin
+    node.ast.BadDecl.end = end
     return node
 }
 
