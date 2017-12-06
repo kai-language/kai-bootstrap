@@ -82,7 +82,7 @@ heapAllocFunc :: fn(payload: rawptr, type: AllocType, size, oldsize: u64, old: r
         return libc.malloc(size)
     case Free:
         libc.free(old)
-        return(nil) // FIXME: @CompilerBug 'return nil' derails parser
+        return nil
     case FreeAll: 
         break
     case Realloc:

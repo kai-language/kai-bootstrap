@@ -10,6 +10,7 @@ LowestPrecedence  :: 0
 UnaryPrecedence   :: 7
 HighestPrecedence :: 8
 
+
 SourceFile :: struct {
     arena: alloc.Arena
     fullpath: string
@@ -403,10 +404,10 @@ parseType :: fn(f: *SourceFile, allowPoly, allowVariadic: bool) -> *ast.AstNode 
 
         switch f.currentToken.kind {
         case Rbrack:
-            length = nil;
+            length = nil
         case Ellipsis:
             next(f)
-            length = nil;
+            length = nil
             isImplicitlySized = true
         case Ident:
             if !strings.Compare(f.currentToken.str, "vec")
@@ -478,7 +479,18 @@ parseUnaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstN
 }
 
 parseBinaryExpr :: fn(f: *SourceFile, prec: u64, allowPolyOrVariadicType: bool) -> *ast.AstNode {
-    return nil
+    lhs := parseUnaryExpr(f, allowPolyOrVariadicType)
+
+    for true {
+        op := f.currentToken
+        oprec := tokenPrecedence(f)
+        if oprec < prec
+            return lhs
+
+        next(f)
+        rhs := parseBinaryExpr(f, oprec + 1, false)
+        lhs = MakeBinary(f, op, lhs, rhs)
+    }
 }
 
 parsePrimaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
@@ -487,6 +499,24 @@ parsePrimaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.As
 
 parseBranch :: fn(f: *SourceFile) -> *ast.AstNode {
     return nil
+}
+
+tokenPrecedence :: fn(f: *SourceFile) -> u64 {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+    case Lor:
+        return 1
+    case Land:
+        return 2
+    case Eql, Neq, Lss, Leq, Gtr, Geq:
+        return 3
+    case Add, Sub, Or, Xor:
+        return 4
+    case Mul, Quo, Rem, Shl, Shr, And:
+        return 5
+    case:
+        return LowestPrecedence
+    }
 }
 
 expect :: fn(f: *SourceFile, token: lex.TokenKind) -> lex.Token {
