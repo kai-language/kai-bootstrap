@@ -2,8 +2,13 @@
 #import "alloc.kai"
 #import "ast.kai"
 #import "errors.kai"
+#import "strings.kai"
 
 #import "libc.kai"
+
+LowestPrecedence  :: 0
+UnaryPrecedence   :: 7
+HighestPrecedence :: 8
 
 SourceFile :: struct {
     arena: alloc.Arena
@@ -36,6 +41,9 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
     file.fullpath = path
     alloc.ArenaInit(&file.arena, sizeof(ast.AstNode) * lexer.data.len)
 
+    // load the first token
+    next(file)
+
     return true
 }
 
@@ -52,6 +60,12 @@ MakeBadExpr :: fn(f: *SourceFile, begin, end: lex.Token) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.BadExpr)
     node.ast.BadExpr.begin = begin
     node.ast.BadExpr.end = end
+    return node
+}
+
+MakeNilLiteral :: fn(f: *SourceFile, token: lex.Token) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.NilLiteral)
+    node.ast.NilLiteral = token
     return node
 }
 
@@ -124,18 +138,16 @@ MakeAutocast :: fn(f: *SourceFile, token: lex.Token, expr: *ast.AstNode) -> *ast
     return node
 }
 
-MakeCast :: fn(f: *SourceFile, token, kind: lex.Token, type, expr: *ast.AstNode) -> *ast.AstNode {
+MakeCast :: fn(f: *SourceFile, kind: lex.Token, type, expr: *ast.AstNode) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.Cast)
-    node.ast.Cast.token = token
     node.ast.Cast.kind = kind
     node.ast.Cast.type = type
     node.ast.Cast.expr = expr
     return node
 }
 
-MakeUnary :: fn(f: *SourceFile, token, op: lex.Token, element: *ast.AstNode) -> *ast.AstNode {
+MakeUnary :: fn(f: *SourceFile, op: lex.Token, element: *ast.AstNode) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.Unary)
-    node.ast.Unary.token = token
     node.ast.Unary.op = op
     node.ast.Unary.element = element
     return node
@@ -297,9 +309,207 @@ next0 :: fn(f: *SourceFile) -> void {
     f.tokenIndex += 1
 }
 
-next :: fn(f: *SourceFile) -> void {
+next :: fn(f: *SourceFile) -> lex.Token {
+    prev := f.currentToken
     next0(f)
     for f.currentToken.kind == lex.TokenKind.Comment {
         next0(f)
+    }
+
+    return prev
+}
+
+parseIdent :: fn(f: *SourceFile) -> *ast.AstNode {
+    token := f.currentToken
+    if token.kind == lex.TokenKind.Ident {
+        next(f)
+    } else {
+        token.str = "_"
+    }
+
+    return MakeIdent(f, token)
+}
+
+parseCast :: fn(f: *SourceFile) -> *ast.AstNode {
+    kind := next(f)
+    expect(f, lex.TokenKind.Lparen)
+    explicitType := parseType(f, false, false)
+    expect(f, lex.TokenKind.Rparen)
+    expr := parseUnaryExpr(f, false)
+    return MakeCast(f, kind, explicitType, expr)
+}
+
+parseOperand :: fn(f: *SourceFile) -> *ast.AstNode {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+    case Nil:
+        return MakeNilLiteral(f, next(f))
+    case Ident:
+        return parseIdent(f)
+    case String, Int, Float:
+        return MakeBasicLit(f, next(f))
+    case Cast, Bitcast:
+        return parseCast(f)
+    }
+}
+
+parseStmts :: fn(f: *SourceFile) -> void {
+    stmts: []*ast.AstNode
+    allocator := alloc.DefaultAllocatorInit()
+    alloc.ArrayInit(allocator, &stmts, 10)
+
+    for f.currentToken.kind != lex.TokenKind.Eof {
+        alloc.Append(allocator, &stmts, parseStmt(f))
+    }
+}
+
+parseStmt :: fn(f: *SourceFile) -> *ast.AstNode {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+    case Ident, Int, Float, String, Fn, Lparen,
+         Lbrack, Struct, Union, Enum,
+         Add, Sub, Mul, And, Xor, Not, Lss:
+        stmt := parseSimpleStmt(f)
+        expectTerm(f)
+        return stmt
+
+    case Break, Continue, Goto, Fallthrough:
+        return parseBranch(f)
+    }
+
+    return nil
+}
+
+parseSimpleStmt :: fn(f: *SourceFile) -> *ast.AstNode {
+    return nil
+}
+
+parseType :: fn(f: *SourceFile, allowPoly, allowVariadic: bool) -> *ast.AstNode {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+    case Ident:
+        x := parseIdent(f)
+        if f.currentToken.kind == Period {
+            tok := next(f)
+            return MakeSelector(f, tok, x, parseIdent(f))
+        }
+        return x
+    case Lbrack:
+        lbrack := next(f)
+
+        isVector := false
+        isImplicitlySized := false
+        length: *ast.AstNode
+
+        switch f.currentToken.kind {
+        case Rbrack:
+            length = nil;
+        case Ellipsis:
+            next(f)
+            length = nil;
+            isImplicitlySized = true
+        case Ident:
+            if !strings.Compare(f.currentToken.str, "vec")
+                fallthrough
+            next(f)
+            isVector = true
+            length = parseExpr(f, false)
+        case:
+            length = parseExpr(f, false)
+        }
+
+        rbrack := expect(f, Rbrack)
+        type := parseType(f, false, false)
+
+        if length != nil {
+            if isVector
+                return MakeVectorType(f, lbrack, rbrack, length, type)
+            return MakeArrayType(f, lbrack, rbrack, length, type)
+        } else if isImplicitlySized {
+            return MakeArrayType(f, lbrack, rbrack, nil, type)
+        } else {
+            return MakeSliceType(f, lbrack, rbrack, type)
+        }
+    case Mul:
+        token := next(f)
+        return MakePointerType(f, token, parseType(f, false, false))
+    case Dollar:
+        token := next(f)
+        type := parseType(f, false, false)
+        return MakePolyType(f, token, type)
+    case Ellipsis:
+        if !allowVariadic
+            break
+
+        ellipsis := next(f)
+        return MakeVariadicType(f, ellipsis, parseType(f, true, false), false)
+    case Directive:
+        if !allowVariadic || !strings.Compare(f.currentToken.str, "cvargs") {
+            break
+        }
+
+        next(f)
+        ellipsis := expect(f, lex.TokenKind.Ellipsis)
+        return MakeVariadicType(f, ellipsis, parseType(f, true, false), true)
+    }
+
+    // TODO(Brett): error and recover
+    begin := next(f)
+    return MakeBadStmt(f, begin, begin)
+}
+
+parseExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
+    return parseBinaryExpr(f, LowestPrecedence + 1, allowPolyOrVariadicType)
+}
+
+parseUnaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+    case Add, Sub, Not, Xor, And, Lss:
+        op := next(f)
+        expr := parseUnaryExpr(f, false)
+        return MakeUnary(f, op, expr)
+    case Mul:
+        token := next(f)
+        return MakePointerType(f, token, parseType(f, false, false))
+    case:
+        return parsePrimaryExpr(f, allowPolyOrVariadicType)
+    }
+}
+
+parseBinaryExpr :: fn(f: *SourceFile, prec: u64, allowPolyOrVariadicType: bool) -> *ast.AstNode {
+    return nil
+}
+
+parsePrimaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
+    return nil
+}
+
+parseBranch :: fn(f: *SourceFile) -> *ast.AstNode {
+    return nil
+}
+
+expect :: fn(f: *SourceFile, token: lex.TokenKind) -> lex.Token {
+    prev := f.currentToken
+    if prev.kind != token {
+        // TODO(Brett): error message
+    }
+
+    next(f)
+    return prev
+}
+
+expectTerm :: fn(f: *SourceFile) -> void {
+    using lex.TokenKind
+    switch f.currentToken.kind {
+        case Rparen, Rbrace: return
+        case Comma:
+            // TODO(Brett): error message
+            fallthrough
+        case Semicolon:
+            next(f)
+        case:
+            // TODO(Brett): error message and recover
+            next(f)
     }
 }
