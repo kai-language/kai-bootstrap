@@ -223,7 +223,10 @@ Ast :: union {
 
     Assign : struct {}
 
-    Return: struct {}
+    Return: struct {
+        token: Token
+        stmts: []*AstNode
+    }
 
     Defer: struct {
         token: Token
@@ -240,7 +243,10 @@ Ast :: union {
         label: *AstNode
     }
 
-    Block : struct {}
+    Block : struct {
+        begin, end: Token
+        stmts: []*AstNode
+    }
 
     If: struct {
         token: Token

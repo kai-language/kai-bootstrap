@@ -291,7 +291,7 @@ NextToken :: fn(l: *Lexer) -> Token {
 
         using TokenKind
         switch t.kind {
-        case Ident, Break, Continue, Fallthrough, Return:
+        case Ident, Break, Continue, Fallthrough, Return, Nil:
             l.insertSemi = true
         case If, For, Switch:
             l.insertSemiBeforeLBrace = true
