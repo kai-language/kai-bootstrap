@@ -10,6 +10,7 @@ LowestPrecedence  :: 0
 UnaryPrecedence   :: 7
 HighestPrecedence :: 8
 
+DefaultListLen :: 10
 
 SourceFile :: struct {
     arena: alloc.Arena
@@ -97,6 +98,14 @@ MakeFuncLit :: fn(f: *SourceFile, token: lex.Token, type, body: *ast.AstNode) ->
     return node
 }
 
+MakeCompositeLit :: fn(f: *SourceFile, begin, end: lex.Token, elements: []*ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.CompositeLit)
+    node.ast.CompositeLit.begin = begin
+    node.ast.CompositeLit.end = end
+    node.ast.CompositeLit.elements = elements
+    return node
+}
+
 MakeParen :: fn(f: *SourceFile, begin, end: lex.Token, expr: *ast.AstNode) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.Paren)
     node.ast.Paren.begin = begin
@@ -144,6 +153,15 @@ MakeCast :: fn(f: *SourceFile, kind: lex.Token, type, expr: *ast.AstNode) -> *as
     node.ast.Cast.kind = kind
     node.ast.Cast.type = type
     node.ast.Cast.expr = expr
+    return node
+}
+
+MakeCall :: fn(f: *SourceFile, begin, end: lex.Token, labels, args: []*ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Call)
+    node.ast.Call.begin = begin
+    node.ast.Call.end = end
+    node.ast.Call.labels = labels
+    node.ast.Call.args = args
     return node
 }
 
@@ -352,6 +370,29 @@ parseIdent :: fn(f: *SourceFile) -> *ast.AstNode {
     return MakeIdent(f, token)
 }
 
+parseElementList :: fn(f: *SourceFile) -> []*ast.AstNode {
+    elements := []*ast.AstNode {}
+    allocator := alloc.DefaultAllocatorInit()
+    alloc.ArrayInit(allocator, &elements, DefaultListLen)
+
+    for f.currentToken.kind != lex.TokenKind.Rbrace && f.currentToken.kind != lex.TokenKind.Eof {
+        alloc.Append(allocator, &elements, parseElement(f))
+        if !atComma(f, lex.TokenKind.Rbrace, "composite literal")
+            break
+
+        next(f)
+    }
+
+    return elements
+}
+
+parseCompositeLiteralBody :: fn(f: *SourceFile, type: *ast.AstNode) -> *ast.AstNode {
+    begin := next(f)
+    elements := parseElementList(f)
+    end := expect(f, lex.TokenKind.Rbrace)
+    return MakeCompositeLit(f, begin, end, elements)
+}
+
 parseOperand :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
     using lex.TokenKind
     switch f.currentToken.kind {
@@ -387,7 +428,7 @@ parseOperand :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNod
 parseStmts :: fn(f: *SourceFile) -> []*ast.AstNode {
     stmts := []*ast.AstNode {}
     allocator := alloc.DefaultAllocatorInit()
-    alloc.ArrayInit(allocator, &stmts, 10)
+    alloc.ArrayInit(allocator, &stmts, DefaultListLen)
 
     for f.currentToken.kind != lex.TokenKind.Eof {
         alloc.Append(allocator, &stmts, parseStmt(f))
@@ -399,7 +440,7 @@ parseStmts :: fn(f: *SourceFile) -> []*ast.AstNode {
 parseStmtList :: fn(f: *SourceFile) -> []*ast.AstNode {
     stmts: []*ast.AstNode
     allocator := alloc.DefaultAllocatorInit()
-    alloc.ArrayInit(allocator, &stmts, 10)
+    alloc.ArrayInit(allocator, &stmts, DefaultListLen)
 
     using lex.TokenKind
     alloc.Append(allocator, &stmts, parseStmt(f))
@@ -575,7 +616,7 @@ parseExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
 parseExprList :: fn(f: *SourceFile) -> []*ast.AstNode {
     list: []*ast.AstNode
     allocator := alloc.DefaultAllocatorInit()
-    alloc.ArrayInit(allocator, &list, 10)
+    alloc.ArrayInit(allocator, &list, DefaultListLen)
 
     using lex.TokenKind
     alloc.Append(allocator, &list, parseExpr(f, false))
@@ -585,6 +626,37 @@ parseExprList :: fn(f: *SourceFile) -> []*ast.AstNode {
     }
 
     return list
+}
+
+parseArgumentList :: fn(f: *SourceFile) -> []*ast.AstNode, []*ast.AstNode {
+    allocator := alloc.DefaultAllocatorInit()
+
+    labels: []*ast.AstNode
+    exprs:  []*ast.AstNode
+
+    alloc.ArrayInit(allocator, &labels, DefaultListLen)
+    alloc.ArrayInit(allocator, &exprs,  DefaultListLen)
+
+    using lex.TokenKind
+    for true {
+        label: *ast.AstNode = nil
+        expr := parseExpr(f, false)
+        if expr.kind == ast.AstKind.Ident && f.currentToken.kind == Colon {
+            next(f)
+            label = expr
+            expr = parseExpr(f, false)
+        }
+
+        alloc.Append(allocator, &labels, label)
+        alloc.Append(allocator, &exprs,  expr)
+
+        if f.currentToken.kind != Comma
+            break
+
+        next(f)
+    }
+
+    return labels, exprs
 }
 
 parseUnaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.AstNode {
@@ -658,7 +730,21 @@ parsePrimaryExpr :: fn(f: *SourceFile, allowPolyOrVariadicType: bool) -> *ast.As
             }
             end := expect(f, Rbrack)
             x = MakeSubscript(f, begin, end, x, index)
-        // TODO(Brett) Lparen and Lbrace
+        case Lparen:
+            begin := next(f)
+            labels := []*ast.AstNode {}
+            exprs := []*ast.AstNode {}
+            if f.currentToken.kind != Rparen {
+                labels, exprs = parseArgumentList(f)
+            }
+            end := next(f)
+            return MakeCall(f, begin, end, labels, exprs)
+        case Lbrace:
+            if x.kind == ast.AstKind.FuncType {
+                // TODO(Brett): error 'Unexpected '{' after function type'
+                return x
+            }
+            return parseCompositeLiteralBody(f, x)
         case:
             return x
         }
@@ -688,6 +774,14 @@ tokenPrecedence :: fn(f: *SourceFile) -> u64 {
 allowTerm :: fn(f: *SourceFile) -> void {
     if f.currentToken.kind == lex.TokenKind.Semicolon
         next(f)
+}
+
+atComma :: fn(f: *SourceFile, token: lex.TokenKind, message: string) -> bool {
+    if f.currentToken.kind = lex.TokenKind.Comma
+        return true
+
+
+
 }
 
 expect :: fn(f: *SourceFile, token: lex.TokenKind) -> lex.Token {

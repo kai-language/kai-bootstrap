@@ -107,7 +107,11 @@ Ast :: union {
         flags: u8
     }
 
-    CompositeLit : struct {}
+    CompositeLit : struct {
+        begin,
+        end: Token
+        elements: []*AstNode
+    }
 
     Paren : struct {
         begin, end: Token
@@ -143,7 +147,12 @@ Ast :: union {
         expr: *AstNode
     }
 
-    Call : struct {}
+    Call : struct {
+        begin,
+        end: Token
+        labels: []*AstNode
+        args:   []*AstNode
+    }
 
     Unary : struct {
         op: Token
