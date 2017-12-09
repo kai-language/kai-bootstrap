@@ -264,9 +264,19 @@ Ast :: union {
         els: *AstNode
     }
 
-    CaseClause : struct {}
+    CaseClause : struct {
+        token: Token
+        match: []*AstNode
+        block: *AstNode
+        // TODO(Brett): entity/label support
+    }
 
-    Switch: struct {}
+    Switch: struct {
+        token: Token
+        match: *AstNode
+        cases: []*AstNode
+        // TODO(Brett): entity/label support
+    }
 
     For: struct {
         token: Token

@@ -304,6 +304,22 @@ MakeIf :: fn(f: *SourceFile, token: lex.Token, cond, body, els: *ast.AstNode) ->
     return node
 }
 
+MakeCaseClause :: fn(f: *SourceFile, token: lex.Token, match: []*ast.AstNode, block: *ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.CaseClause)
+    node.ast.CaseClause.token = token
+    node.ast.CaseClause.match = match
+    node.ast.CaseClause.block = block
+    return node
+}
+
+MakeSwitch :: fn(f: *SourceFile, token: lex.Token, match: *ast.AstNode, cases: []*ast.AstNode) -> *ast.AstNode {
+    node := MakeNode(f, ast.AstKind.Switch)
+    node.ast.Switch.token = token
+    node.ast.Switch.match = match
+    node.ast.Switch.cases = cases
+    return node
+}
+
 MakeFor :: fn(f: *SourceFile, token: lex.Token, init, cond, step, body: *ast.AstNode) -> *ast.AstNode {
     node := MakeNode(f, ast.AstKind.For)
     node.ast.For.token = token
@@ -503,9 +519,8 @@ parseStmt :: fn(f: *SourceFile) -> *ast.AstNode {
             els = parseStmt(f)
         }
         return MakeIf(f, token, cond, body, els)
-
-    // TODO(Brett): Switch and directive cases
-
+    case Switch:
+        return parseSwitchStmt(f)
     case Return:
         token := next(f)
         x := []*ast.AstNode {}
@@ -531,6 +546,47 @@ parseStmt :: fn(f: *SourceFile) -> *ast.AstNode {
 
 parseSimpleStmt :: fn(f: *SourceFile) -> *ast.AstNode {
     return nil
+}
+
+parseSwitchStmt :: fn(f: *SourceFile) -> *ast.AstNode {
+    using lex.TokenKind
+
+    token := expect(f, Switch)
+    match : *ast.AstNode = nil
+    if f.currentToken.kind != Lbrace && f.currentToken.kind != Semicolon {
+        match = parseExpr(f, false)
+    }
+
+    if f.currentToken.kind == Semicolon
+        next(f)
+
+    expect(f, Lbrace)
+
+    cases: []*ast.AstNode
+    allocator := alloc.DefaultAllocatorInit()
+    alloc.ArrayInit(allocator, &cases, DefaultListLen)
+
+    alloc.Append(allocator, &cases, parseExpr(f, false))
+    for f.currentToken.kind == Case {
+        alloc.Append(allocator, &cases, parseCaseClause(f))
+    }
+
+    expect(f, Rbrace)
+    expectTerm(f)
+    return MakeSwitch(f, token, match, cases)
+}
+
+parseCaseClause :: fn(f: *SourceFile) -> *ast.AstNode {
+    token := next(f)
+    match := []*ast.AstNode {}
+    if f.currentToken.kind != lex.TokenKind.Colon
+        match = parseExprList(f)
+
+    colon := expect(f, lex.TokenKind.Colon)
+    body := parseStmtList(f)
+    // TODO(Brett): fix block tokens
+    block := MakeBlock(f, colon, colon, body)
+    return MakeCaseClause(f, token, match, block)
 }
 
 parseType :: fn(f: *SourceFile, allowPoly, allowVariadic: bool) -> *ast.AstNode {
@@ -634,7 +690,7 @@ parseExprList :: fn(f: *SourceFile) -> []*ast.AstNode {
 
     using lex.TokenKind
     alloc.Append(allocator, &list, parseExpr(f, false))
-    for f.currentToken.kind == Comma{
+    for f.currentToken.kind == Comma {
         next(f)
         alloc.Append(allocator, &list, parseExpr(f, false))
     }
