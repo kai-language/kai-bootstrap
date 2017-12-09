@@ -28,6 +28,12 @@ Stat :: struct {
     _reserve2:     i64  // RESERVED
 }
 
+// FIXME: this is not portable at all. Replace with Kai variadics when 'any' is done
+va_list :: struct {
+    a, b: i32
+    c, d: *u8
+}
+
 Timespec :: struct {
     tv_sec, tv_nsec: u64
 }
@@ -80,4 +86,13 @@ MAP_FAILED :: -1
 
     clock_getres  :: (id: i32, res: *Timespec) -> i32
     clock_gettime :: (id: i32, tp: *Timespec) -> i32
+
+    // Variadics
+    vprintf :: (format: *u8, ag: rawptr) -> void
 }
+
+#foreign llvm #callconv "c" {
+    va_start :: (arglist: rawptr) -> void #linkname "llvm.va_start"
+    va_end   :: (arglist: rawptr) -> void #linkname "llvm.va_end"
+}
+

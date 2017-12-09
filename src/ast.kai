@@ -2,6 +2,20 @@
 
 Token :: lexer.Token
 
+Operator :: enum {
+    Invalid,
+    Add,
+    Sub,
+    Mul,
+    Quo,
+    Rem,
+    And,
+    Or,
+    Xor,
+    Shl,
+    Shr
+}
+
 AstKind :: enum {
     BadExpr,
     Comment,
@@ -43,6 +57,7 @@ AstKind :: enum {
     BadStmt,
     Empty,
     Label,
+    ExprStmt,
     Assign,
     Return,
     Defer,
@@ -98,7 +113,10 @@ Ast :: union {
 
     ResultList : struct {}
 
-    IdentList : struct {}
+    IdentList : struct {
+        token: Token
+        idents: []*AstNode
+    }
 
     FuncLit : struct {
         token: Token
@@ -156,11 +174,13 @@ Ast :: union {
 
     Unary : struct {
         op: Token
+        kind: Operator
         element: *AstNode
     }
 
     Binary : struct {
         op: Token
+        kind: Operator
         lhs, rhs: *AstNode
     }
 
@@ -230,7 +250,16 @@ Ast :: union {
 
     Label : Token
 
-    Assign : struct {}
+    ExprStmt : struct {
+        token: Token
+        expr: *AstNode
+    }
+
+    Assign : struct {
+        token: Token
+        lhs,
+        rhs: []*AstNode
+    }
 
     Return: struct {
         token: Token
@@ -306,7 +335,13 @@ Ast :: union {
 
     DeclBlock : struct {}
 
-    Declaration : struct {}
+    Declaration : struct {
+        token: Token
+        names,
+        values: []*AstNode
+        type: *AstNode
+        isConstant: bool
+    }
 
     BadDecl : struct {
         begin, end: Token
