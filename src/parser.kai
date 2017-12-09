@@ -34,7 +34,7 @@ SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
         tok := lex.NextToken(&lexer)
         alloc.Append(allocator, &file.tokens, tok)
 
-        libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"%.*s\"\x1b[0m\n".raw, lex.Describe(tok).raw, tok.str.len, tok.str.raw)
+        libc.printf("token: \x1b[35m%s\x1b[0m, lit: \x1b[34m\"%.*s\"\x1b[0m\n".raw, lex.Describe(tok).raw, tok.lit.len, tok.lit.raw)
 
         if tok.kind == lex.TokenKind.Eof
             break
@@ -364,10 +364,24 @@ parseIdent :: fn(f: *SourceFile) -> *ast.AstNode {
     if token.kind == lex.TokenKind.Ident {
         next(f)
     } else {
-        token.str = "_"
+        token.lit = "_"
     }
 
     return MakeIdent(f, token)
+}
+
+parseElement :: fn(f: *SourceFile) -> *ast.AstNode {
+    if f.currentToken.kind == lex.TokenKind.Lbrace {
+        return MakeKeyValue(f, f.currentToken, nil, parseCompositeLiteralBody(f, nil))
+    }
+
+    el := parseExpr(f, false)
+    if f.currentToken.kind == lex.TokenKind.Colon {
+        colon := next(f)
+        return MakeKeyValue(f, colon, el, parseExpr(f, false))
+    }
+
+    return MakeKeyValue(f, f.currentToken, nil, el)
 }
 
 parseElementList :: fn(f: *SourceFile) -> []*ast.AstNode {
@@ -544,7 +558,7 @@ parseType :: fn(f: *SourceFile, allowPoly, allowVariadic: bool) -> *ast.AstNode 
             length = nil
             isImplicitlySized = true
         case Ident:
-            if !strings.Compare(f.currentToken.str, "vec")
+            if !strings.Compare(f.currentToken.lit, "vec")
                 fallthrough
             next(f)
             isVector = true
@@ -579,7 +593,7 @@ parseType :: fn(f: *SourceFile, allowPoly, allowVariadic: bool) -> *ast.AstNode 
         ellipsis := next(f)
         return MakeVariadicType(f, ellipsis, parseType(f, true, false), false)
     case Directive:
-        if !allowVariadic || !strings.Compare(f.currentToken.str, "cvargs") {
+        if !allowVariadic || !strings.Compare(f.currentToken.lit, "cvargs") {
             break
         }
 
@@ -777,11 +791,21 @@ allowTerm :: fn(f: *SourceFile) -> void {
 }
 
 atComma :: fn(f: *SourceFile, token: lex.TokenKind, message: string) -> bool {
-    if f.currentToken.kind = lex.TokenKind.Comma
+    if f.currentToken.kind == lex.TokenKind.Comma
         return true
 
+    if f.currentToken.kind != token {
+        if f.currentToken.kind == lex.TokenKind.Semicolon && strings.Compare(f.currentToken.lit, "\n") {
+            next(f)
+            if f.currentToken.kind == token return false
+            // TODO(Brett): add before newline to warning
+        }
 
+        // TODO(Brett): report expected comma error
+        return true
+    }
 
+    return false
 }
 
 expect :: fn(f: *SourceFile, token: lex.TokenKind) -> lex.Token {

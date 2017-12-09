@@ -113,7 +113,7 @@ Position :: struct {
 Token :: struct {
     kind: TokenKind
     pos : Position
-    str : []u8 
+    lit : []u8 
 }
 
 Invalid := Token { TokenKind.Invalid }
@@ -213,7 +213,7 @@ ScanNumber :: fn(l: *Lexer, seenDecimalPoint: bool) -> Token {
 
     t: Token
     t.kind = TokenKind.Int
-    t.str = l.data[start-1:start]
+    t.lit = l.data[start-1:start]
     t.pos.filename = l.path
     t.pos.line = cast(u32)l.lineCount
     t.pos.column = cast(u32)l.offset - l.lineOffset + 1
@@ -253,7 +253,7 @@ ScanNumber :: fn(l: *Lexer, seenDecimalPoint: bool) -> Token {
 
     // TODO(Brett): exponent
 
-    t.str.len = l.offset - start
+    t.lit.len = l.offset - start
     return t
 }
 
@@ -271,7 +271,7 @@ NextToken :: fn(l: *Lexer) -> Token {
 
     t: Token
     t.kind = TokenKind.Invalid
-    t.str = l.data[l.offset-1:l.offset]
+    t.lit = l.data[l.offset-1:l.offset]
     t.pos.filename = l.path
     t.pos.line = cast(u32)l.lineCount
     t.pos.column = cast(u32)l.offset - l.lineOffset + 1
@@ -286,8 +286,8 @@ NextToken :: fn(l: *Lexer) -> Token {
             NextCodePoint(l)
         }
 
-        t.str.len = l.offset - offset
-        t.kind = GetKeyword(t.str)
+        t.lit.len = l.offset - offset
+        t.kind = GetKeyword(t.lit)
 
         using TokenKind
         switch t.kind {
@@ -311,7 +311,7 @@ NextToken :: fn(l: *Lexer) -> Token {
                 // TODO: literal for "{"
             } else {
                 t.kind = Eof
-                t.str.len = 0
+                t.lit.len = 0
             }
         case "\n":
             // we only reach here is self.insertSemi was
@@ -342,9 +342,9 @@ NextToken :: fn(l: *Lexer) -> Token {
                     ScanEscape(l)
             }
 
-            t.str.len = l.offset - offset
+            t.lit.len = l.offset - offset
             t.kind = String
-            ok, allocatedExtra := strings.Escape(alloc.DefaultAllocatorInit(), &t.str)
+            ok, allocatedExtra := strings.Escape(alloc.DefaultAllocatorInit(), &t.lit)
             if allocatedExtra {
                 // TODO(Brett): add this string to the list so we can free it when we
                 // free the lexer
@@ -385,7 +385,7 @@ NextToken :: fn(l: *Lexer) -> Token {
             t.kind = Period
             if l.currentCP == cast(u32)"." {
                 t.kind = Ellipsis
-                t.str.len = 2
+                t.lit.len = 2
                 NextCodePoint(l)
             }
         case: t.kind = Invalid
