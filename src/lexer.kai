@@ -308,7 +308,7 @@ NextToken :: fn(l: *Lexer) -> Token {
             if l.insertSemi {
                 l.insertSemi = false
                 t.kind = TokenKind.Semicolon
-                // TODO: literal for "{"
+                t.lit = "\n"
             } else {
                 t.kind = Eof
                 t.lit.len = 0
@@ -320,7 +320,6 @@ NextToken :: fn(l: *Lexer) -> Token {
             l.insertSemi = false
             l.insertSemiBeforeLBrace = false
             t.kind = Semicolon
-            // TODO: literal for "\n"
         case "\"":
             l.insertSemi = true
             offset := l.offset - 1
