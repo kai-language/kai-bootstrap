@@ -23,6 +23,12 @@ SourceFile :: struct {
     currentToken: lex.Token
 }
 
+SourcePackage :: struct {
+    initPath: string
+    files: []*SourceFile
+    totalLineCount: u64
+}
+
 SourceFileInit :: fn(file: *SourceFile, path: string) -> bool {
     lexer: lex.Lexer
     ok := lex.LexerInit(&lexer, path)

@@ -355,7 +355,34 @@ NextToken :: fn(l: *Lexer) -> Token {
         case "*": t.kind = switch2(l, Mul, AssignMul)
         case "/":
             if l.currentCP == cast(u32)"/" || l.currentCP == cast(u32)"*" {
+                t.kind = Comment
                 if l.insertSemi && findLineEnd(l) {
+                    l.insertSemi = false
+                    t.kind = Semicolon
+                    t.lit = "\n"
+                } else {
+                    offset := l.offset - 1
+                    if l.currentCP == cast(u32)"/" {
+                        //-style comment
+                        NextCodePoint(l)
+                        for l.currentCP != cast(u32)"\n" && l.currentCP != strings.EOF {
+                            NextCodePoint(l)
+                        }
+                    } else {
+                        /*-style comment */
+                        for cp := l.currentCP; cp != strings.EOF; cp = l.currentCP {
+                            NextCodePoint(l)
+                            if cp == cast(u32)"*" && l.currentCP == cast(u32)"/" {
+                                NextCodePoint(l)
+                                break
+                            }
+                        }
+
+                        if l.currentCP == strings.EOF
+                            error(l, "Comment not terminated")
+                    }
+
+                    t.lit.len = l.offset - offset
                 }
             } else {
                 t.kind = switch2(l, Quo, AssignQuo)
@@ -501,9 +528,43 @@ switch4 :: fn(l: *Lexer, t1, t2 ,t3, t4: TokenKind, ch: strings.CodePoint) -> To
     return t1
 }
 
-// TODO(Brett)
 findLineEnd :: fn(l: *Lexer) -> bool {
-    return true
+    cp := l.currentCP
+    offset := l.offset
+    lc := l.lineCount
+    defer {
+        l.currentCP = cp
+        l.offset = offset
+        l.lineCount = lc
+    }
+
+    for l.currentCP == cast(u32)"/" || l.currentCP == cast(u32)"*" {
+        if l.currentCP == cast(u32)"/" {
+            return true
+        }
+
+        NextCodePoint(l)
+        for l.currentCP != strings.EOF {
+            if l.currentCP == cast(u32)"\n"
+                return true
+
+            NextCodePoint(l)
+            if l.currentCP == cast(u32)"*" && l.currentCP == cast(u32)"/" {
+                NextCodePoint(l)
+                break
+            }
+        }
+        SkipWhitespace(l)
+        if l.currentCP == cast(u32)"\n" || l.currentCP == strings.EOF
+            return true
+
+        if l.currentCP != cast(u32)"/"
+            return false
+
+        NextCodePoint(l)
+    }
+
+    return false
 }
 
 error :: fn(l: *Lexer, message: string) -> void {
