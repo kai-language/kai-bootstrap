@@ -4,9 +4,9 @@
 #import "errors.kai"
 #import "parser.kai"
 
-Result :: enum(i32) {
-    Ok,
-    NoInput,
+Result :: enum(u32) {
+    Ok
+    NoInput
     Error
 }
 

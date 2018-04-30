@@ -3,97 +3,97 @@
 #import "strings.kai"
 
 TokenKind :: enum {
-    Invalid,
-    Eof,
-    Comment,
+    Invalid
+    Eof
+    Comment
 
-    Ident,
-    Directive,
+    Ident
+    Directive
 
-    Int,
-    Float,
-    String,
+    Int
+    Float
+    String
 
-    Add,
-    Sub,
-    Mul,
-    Quo,
-    Rem,
+    Add
+    Sub
+    Mul
+    Quo
+    Rem
 
-    And,
-    Or,
-    Xor,
-    Shl,
-    Shr,
+    And
+    Or
+    Xor
+    Shl
+    Shr
 
-    AssignAdd,
-    AssignSub,
-    AssignMul,
-    AssignQuo,
-    AssignRem,
+    AssignAdd
+    AssignSub
+    AssignMul
+    AssignQuo
+    AssignRem
     
-    AssignAnd,
-    AssignOr,
-    AssignXor,
-    AssignShl,
-    AssignShr,
+    AssignAnd
+    AssignOr
+    AssignXor
+    AssignShl
+    AssignShr
 
-    Land,
-    Lor,
+    Land
+    Lor
     
-    Lss,
-    Gtr,
-    Not,
+    Lss
+    Gtr
+    Not
 
-    Eql,
-    Neq,
-    Leq,
-    Geq,
+    Eql
+    Neq
+    Leq
+    Geq
 
-    Assign,
-    Ellipsis,
-    Dollar,
-    Question,
-    RetArrow,
+    Assign
+    Ellipsis
+    Dollar
+    Question
+    RetArrow
 
-    Lparen,
-    Lbrack,
-    Lbrace,
-    Rparen,
-    Rbrack,
-    Rbrace,
+    Lparen
+    Lbrack
+    Lbrace
+    Rparen
+    Rbrack
+    Rbrace
 
-    Comma,
-    Period,
-    Colon,
-    Semicolon,
+    Comma
+    Period
+    Colon
+    Semicolon
 
-    Cast,
-    Bitcast,
-    Autocast,
+    Cast
+    Bitcast
+    Autocast
 
-    Using,
+    Using
 
-    Goto,
-    Break,
-    Continue,
-    Fallthrough,
+    Goto
+    Break
+    Continue
+    Fallthrough
    
-    Return,
+    Return
 
-    If,
-    For,
-    Else,
-    Defer,
-    In,
-    Switch,
-    Case,
+    If
+    For
+    Else
+    Defer
+    In
+    Switch
+    Case
     
-    Fn,
-    Union,
-    Variant,
-    Enum,
-    Struct,
+    Fn
+    Union
+    Variant
+    Enum
+    Struct
 
     Nil
 }
@@ -150,7 +150,7 @@ NextCodePoint :: fn(l: *Lexer) -> void {
     if l.offset >= l.data.len {
         l.offset = l.data.len - 1
         curr := l.data[l.offset]
-        if curr == cast(u8)"\n" {
+        if curr == "\n" {
             l.lineCount += 1
             l.lineOffset = cast(u32)l.offset
         }
@@ -163,7 +163,7 @@ NextCodePoint :: fn(l: *Lexer) -> void {
             error(l, "Invalid unicode code point")
         }
 
-        if cp == cast(u32)"\n" {
+        if cp == "\n" {
             l.lineCount += (l.insertSemi) ? 1 : 0
             l.lineOffset = cast(u32)l.offset
         }
@@ -190,18 +190,18 @@ SkipWhitespace :: fn(l: *Lexer) -> void {
 DigitVal :: fn(cp: u32) -> u32 {
     switch cp {
     case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
-        return cp - cast(u32)"0"
+        return cp - "0"
     case "a", "b", "c", "d", "e", "f":
-        return cp - cast(u32)"a" + 10
+        return cp - "a" + 10
     case "A", "B", "C", "D", "E", "F":
-        return cp - cast(u32)"A" + 10
+        return cp - "A" + 10
     case: return 16
     }
 }
 
 ScanMatissa :: fn(l: *Lexer, base: u32) -> void {
     for l.currentCP != strings.EOF {
-        if l.currentCP != cast(u32)"_" && DigitVal(l.currentCP) >= base 
+        if l.currentCP != "_" && DigitVal(l.currentCP) >= base 
             break
 
         NextCodePoint(l)
@@ -225,7 +225,7 @@ ScanNumber :: fn(l: *Lexer, seenDecimalPoint: bool) -> Token {
         ScanMatissa(l, 10)
     }
 
-    if l.currentCP == cast(u32)"0" && !seenDecimalPoint {
+    if l.currentCP == "0" && !seenDecimalPoint {
         NextCodePoint(l)
         
         switch l.currentCP {
@@ -245,7 +245,7 @@ ScanNumber :: fn(l: *Lexer, seenDecimalPoint: bool) -> Token {
     if !seenDecimalPoint && !mustBeInteger
         ScanMatissa(l, 10)
 
-    if l.currentCP == cast(u32)"." && !seenDecimalPoint && !mustBeInteger {
+    if l.currentCP == "." && !seenDecimalPoint && !mustBeInteger {
         NextCodePoint(l)
         t.kind = TokenKind.Float
         ScanMatissa(l, 10)
@@ -334,10 +334,10 @@ NextToken :: fn(l: *Lexer) -> Token {
 
                 NextCodePoint(l)
 
-                if cp == cast(u32)"\""
+                if cp == "\""
                     break
 
-                if cp == cast(u32)"\\"
+                if cp == "\\"
                     ScanEscape(l)
             }
 
@@ -354,7 +354,7 @@ NextToken :: fn(l: *Lexer) -> Token {
         case "-": t.kind = switch3(l, Sub, AssignSub, RetArrow, ">")
         case "*": t.kind = switch2(l, Mul, AssignMul)
         case "/":
-            if l.currentCP == cast(u32)"/" || l.currentCP == cast(u32)"*" {
+            if l.currentCP == "/" || l.currentCP == "*" {
                 t.kind = Comment
                 if l.insertSemi && findLineEnd(l) {
                     l.insertSemi = false
@@ -362,17 +362,17 @@ NextToken :: fn(l: *Lexer) -> Token {
                     t.lit = "\n"
                 } else {
                     offset := l.offset - 1
-                    if l.currentCP == cast(u32)"/" {
+                    if l.currentCP == "/" {
                         //-style comment
                         NextCodePoint(l)
-                        for l.currentCP != cast(u32)"\n" && l.currentCP != strings.EOF {
+                        for l.currentCP != "\n" && l.currentCP != strings.EOF {
                             NextCodePoint(l)
                         }
                     } else {
                         /*-style comment */
                         for cp := l.currentCP; cp != strings.EOF; cp = l.currentCP {
                             NextCodePoint(l)
-                            if cp == cast(u32)"*" && l.currentCP == cast(u32)"/" {
+                            if cp == "*" && l.currentCP == "/" {
                                 NextCodePoint(l)
                                 break
                             }
@@ -409,7 +409,7 @@ NextToken :: fn(l: *Lexer) -> Token {
         case "#": t.kind = Directive
         case ".":
             t.kind = Period
-            if l.currentCP == cast(u32)"." {
+            if l.currentCP == "." {
                 t.kind = Ellipsis
                 t.lit.len = 2
                 NextCodePoint(l)
@@ -489,7 +489,7 @@ GetKeyword :: fn(s: []u8) -> TokenKind {
 }
 
 switch2 :: fn(l: *Lexer, t1, t2: TokenKind) -> TokenKind {
-    if l.currentCP == cast(u32)"=" {
+    if l.currentCP == "=" {
         NextCodePoint(l)
         return t2
     }
@@ -497,7 +497,7 @@ switch2 :: fn(l: *Lexer, t1, t2: TokenKind) -> TokenKind {
 }
 
 switch3 :: fn(l: *Lexer, t1, t2, t3: TokenKind, ch: strings.CodePoint) -> TokenKind {
-    if l.currentCP == cast(u32)"=" {
+    if l.currentCP == "=" {
         NextCodePoint(l)
         return t2
     }
@@ -511,14 +511,14 @@ switch3 :: fn(l: *Lexer, t1, t2, t3: TokenKind, ch: strings.CodePoint) -> TokenK
 }
 
 switch4 :: fn(l: *Lexer, t1, t2 ,t3, t4: TokenKind, ch: strings.CodePoint) -> TokenKind {
-    if l.currentCP == cast(u32)"=" {
+    if l.currentCP == "=" {
         NextCodePoint(l)
         return t2
     }
 
     if l.currentCP == ch {
         NextCodePoint(l)
-        if l.currentCP == cast(u32)"=" {
+        if l.currentCP == "=" {
             NextCodePoint(l)
             return t4
         }
@@ -538,27 +538,27 @@ findLineEnd :: fn(l: *Lexer) -> bool {
         l.lineCount = lc
     }
 
-    for l.currentCP == cast(u32)"/" || l.currentCP == cast(u32)"*" {
-        if l.currentCP == cast(u32)"/" {
+    for l.currentCP == "/" || l.currentCP == "*" {
+        if l.currentCP == "/" {
             return true
         }
 
         NextCodePoint(l)
         for l.currentCP != strings.EOF {
-            if l.currentCP == cast(u32)"\n"
+            if l.currentCP == "\n"
                 return true
 
             NextCodePoint(l)
-            if l.currentCP == cast(u32)"*" && l.currentCP == cast(u32)"/" {
+            if l.currentCP == "*" && l.currentCP == "/" {
                 NextCodePoint(l)
                 break
             }
         }
         SkipWhitespace(l)
-        if l.currentCP == cast(u32)"\n" || l.currentCP == strings.EOF
+        if l.currentCP == "\n" || l.currentCP == strings.EOF
             return true
 
-        if l.currentCP != cast(u32)"/"
+        if l.currentCP != "/"
             return false
 
         NextCodePoint(l)

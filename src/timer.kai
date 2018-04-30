@@ -1,5 +1,7 @@
 #import "libc.kai"
 
+#import builtin("types") _
+
 GetClockTime :: fn() -> u64 {
     ts: libc.Timespec
     libc.clock_gettime(libc.CLOCK_PROCESS_CPUTIME_ID, &ts)
@@ -16,7 +18,7 @@ Timings :: struct {
 }
 
 TimingsInit :: fn(t: *Timings, count: u64) -> void {
-    buff := libc.malloc(count * sizeof(Timing))
+    buff := libc.malloc(count * SizeOf(Timing))
     t.sections.raw = cast(*Timing)buff
     t.sections.len = 0
     t.sections.cap = count

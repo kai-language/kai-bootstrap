@@ -3,85 +3,17 @@
 Token :: lexer.Token
 
 Operator :: enum {
-    Invalid,
-    Add,
-    Sub,
-    Mul,
-    Quo,
-    Rem,
-    And,
-    Or,
-    Xor,
-    Shl,
+    Invalid
+    Add
+    Sub
+    Mul
+    Quo
+    Rem
+    And
+    Or
+    Xor
+    Shl
     Shr
-}
-
-AstKind :: enum {
-    BadExpr,
-    Comment,
-    StructField,
-    EnumCase,
-    LocationDirective,
-    NilLiteral,
-    Ident,
-    Ellipsis,
-    BasicLit,
-    PolyParameterList,
-    ResultList,
-    IdentList,
-    FuncLit,
-    CompositeLit,
-    Paren,
-    Selector,
-    Subscript,
-    Slice,
-    Autocast,
-    Cast,
-    Call,
-    Unary,
-    Binary,
-    Ternary,
-    KeyValue,
-    PointerType,
-    ArrayType,
-    SliceType,
-    VectorType,
-    StructType,
-    PolyStructType,
-    EnumType,
-    UnionType,
-    VariantType,
-    PolyType,
-    VariadicType,
-    FuncType,
-    BadStmt,
-    Empty,
-    Label,
-    ExprStmt,
-    Assign,
-    Return,
-    Defer,
-    Using,
-    Branch,
-    Block,
-    If,
-    CaseClause,
-    Switch,
-    For,
-    ForIn,
-    Import,
-    Library,
-    Foreign,
-    DeclBlock,
-    Declaration,
-    BadDecl,
-    FunctionSpecialization,
-    StructSpecialization
-}
-
-AstNode :: struct {
-    kind: AstKind
-    ast: Ast
 }
 
 Ast :: union {
@@ -104,7 +36,7 @@ Ast :: union {
 
     Ellipsis : struct {
         token: Token
-        expr: *AstNode
+        expr: *Ast
     }
 
     BasicLit : Token
@@ -115,108 +47,108 @@ Ast :: union {
 
     IdentList : struct {
         token: Token
-        idents: []*AstNode
+        idents: []*Ast
     }
 
     FuncLit : struct {
         token: Token
         type, 
-        body: *AstNode
+        body: *Ast
         flags: u8
     }
 
     CompositeLit : struct {
         begin,
         end: Token
-        elements: []*AstNode
+        elements: []*Ast
     }
 
     Paren : struct {
         begin, end: Token
-        expr: *AstNode
+        expr: *Ast
     }
 
     Selector : struct {
         token: Token
-        rec, sel: *AstNode
+        rec, sel: *Ast
     }
 
     Subscript : struct {
         begin, end: Token
         rec,
-        index: *AstNode
+        index: *Ast
     }
 
     Slice : struct {
         begin, end: Token
         expr,
         lo,
-        hi: *AstNode
+        hi: *Ast
     }
 
     Autocast : struct {
         token: Token
-        expr: *AstNode
+        expr: *Ast
     }
 
     Cast : struct {
         kind: Token
         type,
-        expr: *AstNode
+        expr: *Ast
     }
 
     Call : struct {
         begin,
         end: Token
-        labels: []*AstNode
-        args:   []*AstNode
+        labels: []*Ast
+        args:   []*Ast
     }
 
     Unary : struct {
         op: Token
         kind: Operator
-        element: *AstNode
+        element: *Ast
     }
 
     Binary : struct {
         op: Token
         kind: Operator
-        lhs, rhs: *AstNode
+        lhs, rhs: *Ast
     }
 
     Ternary : struct {
         qmark, colon: Token
         cond,
         then,
-        els: *AstNode
+        els: *Ast
     }
 
     KeyValue : struct {
         token: Token
         key,
-        value: *AstNode
+        value: *Ast
     }
 
     PointerType : struct {
         token: Token
-        type: *AstNode
+        type: *Ast
     }
 
     ArrayType : struct {
         begin, end: Token
         length,
-        type: *AstNode
+        type: *Ast
     }
 
     SliceType : struct {
         begin, end: Token
-        type: *AstNode
+        type: *Ast
     }
 
     VectorType : struct {
         begin, end: Token
         size,
-        type: *AstNode
+        type: *Ast
     }
 
     StructType : struct {}
@@ -231,16 +163,18 @@ Ast :: union {
 
     PolyType : struct {
         token: Token
-        type: *AstNode
+        type: *Ast
     }
 
     VariadicType : struct {
         token: Token
-        type: *AstNode
+        type: *Ast
         isCVargs: bool
     }
 
-    FuncType : struct {}
+    FuncType : struct {
+
+    }
 
     BadStmt : struct {
         begin, end: Token
@@ -252,58 +186,58 @@ Ast :: union {
 
     ExprStmt : struct {
         token: Token
-        expr: *AstNode
+        expr: *Ast
     }
 
     Assign : struct {
         token: Token
         lhs,
-        rhs: []*AstNode
+        rhs: []*Ast
     }
 
     Return: struct {
         token: Token
-        stmts: []*AstNode
+        stmts: []*Ast
     }
 
     Defer: struct {
         token: Token
-        stmt: *AstNode
+        stmt: *Ast
     }
 
     Using: struct {
         token: Token
-        expr: *AstNode
+        expr: *Ast
     }
 
     Branch: struct {
         token: Token
-        label: *AstNode
+        label: *Ast
     }
 
     Block : struct {
         begin, end: Token
-        stmts: []*AstNode
+        stmts: []*Ast
     }
 
     If: struct {
         token: Token
         cond,
         body,
-        els: *AstNode
+        els: *Ast
     }
 
     CaseClause : struct {
         token: Token
-        match: []*AstNode
-        block: *AstNode
+        match: []*Ast
+        block: *Ast
         // TODO(Brett): entity/label support
     }
 
     Switch: struct {
         token: Token
-        match: *AstNode
-        cases: []*AstNode
+        match: *Ast
+        cases: []*Ast
         // TODO(Brett): entity/label support
     }
 
@@ -312,7 +246,7 @@ Ast :: union {
         init,
         cond,
         step,
-        body: *AstNode
+        body: *Ast
     }
 
     ForIn : struct {}
@@ -322,13 +256,13 @@ Ast :: union {
     Library : struct {
         token: Token
         path,
-        alias: *AstNode
+        alias: *Ast
     }
 
     Foreign : struct {
         token: Token
         library,
-        decl: *AstNode
+        decl: *Ast
         linkname: []u8
         callconv: []u8
     }
@@ -338,8 +272,8 @@ Ast :: union {
     Declaration : struct {
         token: Token
         names,
-        values: []*AstNode
-        type: *AstNode
+        values: []*Ast
+        type: *Ast
         isConstant: bool
     }
 

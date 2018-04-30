@@ -45,11 +45,11 @@ IsAlpha :: fn(cp: CodePoint) -> bool {
     if cp >= 0x100 && cp != EOF {
         return true
     }
-    return (cp >= cast(u32)"A" && cp <= cast(u32)"Z") || (cp >= cast(u32)"a" && cp <= cast(u32)"z") || cp == cast(u32)"_"
+    return (cp >= "A" && cp <= "Z") || (cp >= "a" && cp <= "z") || cp == "_"
 }
 
 IsNumeric :: fn(cp: CodePoint) -> bool {
-    return cp >= cast(u32)"0" && cp <= cast(u32)"9"
+    return cp >= "0" && cp <= "9"
 }
 
 Compare :: fn(a, b: []u8) -> bool {
@@ -88,7 +88,7 @@ Escape :: fn(a: alloc.Allocator, str: *[]u8) -> bool, bool {
         return false, false
 
     quote := s[0]
-    if s[s.len-1] != quote && quote != cast(u8)"\""
+    if s[s.len-1] != quote && quote != "\""
         return false, false
 
     // trim leading and trailing '"'
@@ -96,7 +96,7 @@ Escape :: fn(a: alloc.Allocator, str: *[]u8) -> bool, bool {
 
     requiresEscape := false
     for c in s {
-        if c == cast(u8)"\\" || c == cast(u8)"\"" {
+        if c == "\\" || c == "\"" {
             requiresEscape = true
             break
         }

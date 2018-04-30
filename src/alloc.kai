@@ -1,9 +1,11 @@
 #import "libc.kai"
 
+#import builtin("types") _
+
 AllocType :: enum {
-    Alloc,
-    Free,
-    FreeAll,
+    Alloc
+    Free
+    FreeAll
     Realloc
 }
 
@@ -137,7 +139,7 @@ Realloc :: fn(a: Allocator, ptr: rawptr, oldsize, size: u64) -> rawptr {
 }
 
 ArrayInit :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
-    array.raw = cast(*T)Alloc(a, sizeof(T) * cap)
+    array.raw = cast(*T)Alloc(a, SizeOf(T) * cap)
     array.len = 0
     array.cap = cap
 }
@@ -160,8 +162,8 @@ Grow :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
 UpdateCapacity :: fn(a: Allocator, array: *[]$T, cap: u64) -> void {
     if array.cap == cap return
 
-    newBuff := Alloc(a, sizeof(T) * cap)
-    libc.memcpy(newBuff, array.raw, sizeof(T)*array.cap)
+    newBuff := Alloc(a, SizeOf(T) * cap)
+    libc.memcpy(newBuff, array.raw, SizeOf(T)*array.cap)
     Free(a, array.raw)
     array.raw = cast(*T)newBuff
     array.cap = cap
